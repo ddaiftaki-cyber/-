@@ -1,0 +1,6 @@
+{
+  "name": "كاميرا V380 Pro الذكية بالطاقة الشمسية وشريحة 4G المزدوجة",
+  "description": "صفحة هبوط ثلاثية الأبعاد تفاعلية لبيع كاميرا المراقبة الذكية بالطاقة الشمسية وشريحة 4G ذات العدستين وتطبيق V380 Pro مع استعراض 3D وميزة العرض في غرفتك بالواقع المعزز WebXR/AR وخيارات الشراء والدفع عند الاستلام.",
+  "requestFramePermissions": ["camera"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
