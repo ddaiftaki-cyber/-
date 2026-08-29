@@ -1,38 +1,32 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import * as THREE from 'three';
-import { ProductConfig } from '../types';
-import { MATERIAL_PRESETS } from '../data/productData';
-import { buildCamera3DModel, Camera3DModelInstance } from '../utils/cameraModelBuilder';
+import { ProductConfig, DimosProduct } from '../types';
+import { DIMOS_PRODUCTS } from '../data/dimosStoreData';
+import { MATERIAL_PRESETS, WOOD_FINISH_OPTIONS, METAL_ACCENT_OPTIONS, MARBLE_FINISH_OPTIONS } from '../data/productData';
+import { DimossLogo } from './DimossLogo';
 import { soundFx } from '../utils/audio';
 import {
   Camera,
   X,
   RotateCw,
-  Sun,
-  ShieldAlert,
-  Zap,
   Maximize,
-  Minimize,
   Sliders,
   Sparkles,
-  Download,
-  Share2,
   Check,
   RefreshCw,
-  Layers,
   HelpCircle,
-  Volume2,
-  VolumeX,
-  Video,
-  Move,
+  ShoppingBag,
+  Palette,
+  Eye,
+  Layers,
+  Crown,
+  Maximize2,
   Scan,
   Compass,
-  ArrowUp,
-  ArrowDown,
-  ArrowLeft,
-  ArrowRight,
-  Eye,
-  ShoppingBag,
+  ArrowUpDown,
+  Ruler,
+  Smartphone,
+  Share2,
 } from 'lucide-react';
 
 interface ARRoomViewerProps {
@@ -41,6 +35,8 @@ interface ARRoomViewerProps {
   config: ProductConfig;
   onConfigChange: (updates: Partial<ProductConfig>) => void;
   onOpenReservation: () => void;
+  activeProduct?: DimosProduct | null;
+  onSelectProduct?: (product: DimosProduct) => void;
 }
 
 export const ARRoomViewer: React.FC<ARRoomViewerProps> = ({
@@ -49,41 +45,41 @@ export const ARRoomViewer: React.FC<ARRoomViewerProps> = ({
   config,
   onConfigChange,
   onOpenReservation,
+  activeProduct = null,
+  onSelectProduct,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
+  // Selected product in AR
+  const [selectedProduct, setSelectedProduct] = useState<DimosProduct>(
+    activeProduct || DIMOS_PRODUCTS[0]
+  );
+
+  useEffect(() => {
+    if (activeProduct) {
+      setSelectedProduct(activeProduct);
+    }
+  }, [activeProduct]);
+
   // ThreeJS AR Engine references
   const sceneRef = useRef<THREE.Scene | null>(null);
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
-  const modelInstanceRef = useRef<Camera3DModelInstance | null>(null);
+  const furnitureGroupRef = useRef<THREE.Group | null>(null);
   const arRootGroupRef = useRef<THREE.Group | null>(null);
-  const shadowPlaneRef = useRef<THREE.Mesh | null>(null);
-  const reticleGroupRef = useRef<THREE.Group | null>(null);
   const requestAnimFrameRef = useRef<number>(0);
 
   // AR Camera stream & state
   const [cameraActive, setCameraActive] = useState(false);
-  const [cameraError, setCameraError] = useState<string | null>(null);
   const [facingMode, setFacingMode] = useState<'environment' | 'user'>('environment');
-  const [webXRSupported, setWebXRSupported] = useState(false);
-  const [isWebXRSessionActive, setIsWebXRSessionActive] = useState(false);
-
-  // AR Controls State
-  const [placementMode, setPlacementMode] = useState<'wall' | 'desk' | 'gate'>('wall');
-  const [scaleFactor, setScaleFactor] = useState<number>(1.0); // 1.0 = real-world ~28cm
+  const [scaleFactor, setScaleFactor] = useState<number>(1.0);
   const [rotationY, setRotationY] = useState<number>(0);
-  const [elevationY, setElevationY] = useState<number>(0);
-  const [isLockedPlacement, setIsLockedPlacement] = useState(false);
-  const [ptzPan, setPtzPan] = useState(0);
-  const [ptzTilt, setPtzTilt] = useState(0);
-  const [arAlarmActive, setArAlarmActive] = useState(false);
-  const [arFloodlightActive, setArFloodlightActive] = useState(false);
   const [showHelpModal, setShowHelpModal] = useState(false);
   const [snapshotSuccess, setSnapshotSuccess] = useState(false);
-  const [activeTab, setActiveTab] = useState<'controls' | 'presets' | 'ptz'>('controls');
+  const [activeTab, setActiveTab] = useState<'products' | 'dimensions' | 'colors'>('products');
+  const [showRulerGrid, setShowRulerGrid] = useState<boolean>(true);
 
   // Gesture Tracking
   const touchStartRef = useRef<{ x: number; y: number; dist: number; angle: number }>({
@@ -92,21 +88,10 @@ export const ARRoomViewer: React.FC<ARRoomViewerProps> = ({
     dist: 0,
     angle: 0,
   });
-  const modelPosRef = useRef<{ x: number; y: number; z: number }>({ x: 0, y: 0.1, z: -2.8 });
-
-  // Check WebXR Device API availability
-  useEffect(() => {
-    if ('xr' in navigator && (navigator as any).xr) {
-      (navigator as any).xr
-        .isSessionSupported('immersive-ar')
-        .then((supported: boolean) => setWebXRSupported(supported))
-        .catch(() => setWebXRSupported(false));
-    }
-  }, []);
+  const modelPosRef = useRef<{ x: number; y: number; z: number }>({ x: 0, y: -0.4, z: -3.5 });
 
   // Initialize and manage camera stream
   const startCameraStream = useCallback(async (mode: 'environment' | 'user') => {
-    setCameraError(null);
     try {
       if (videoRef.current && videoRef.current.srcObject) {
         const stream = videoRef.current.srcObject as MediaStream;
@@ -128,11 +113,8 @@ export const ARRoomViewer: React.FC<ARRoomViewerProps> = ({
         await videoRef.current.play();
         setCameraActive(true);
       }
-    } catch (err: any) {
-      console.warn('Camera access fallback:', err);
-      setCameraError(
-        'تعذر الوصول المباشر لكاميرا جهازك. تم تفعيل المحاكاة ثلاثية الأبعاد ثلاثية المحاور للغرفة.'
-      );
+    } catch (err) {
+      console.warn('Camera stream fallback to virtual room:', err);
       setCameraActive(false);
     }
   }, []);
@@ -146,7 +128,6 @@ export const ARRoomViewer: React.FC<ARRoomViewerProps> = ({
     setCameraActive(false);
   }, []);
 
-  // Switch camera between back & front
   const toggleCameraFacing = () => {
     soundFx.playClick();
     const nextMode = facingMode === 'environment' ? 'user' : 'environment';
@@ -154,33 +135,229 @@ export const ARRoomViewer: React.FC<ARRoomViewerProps> = ({
     startCameraStream(nextMode);
   };
 
-  // Launch Native WebXR Session if supported
-  const launchNativeWebXR = async () => {
-    soundFx.playClick();
-    if (!webXRSupported || !rendererRef.current) return;
-    try {
-      const session = await (navigator as any).xr.requestSession('immersive-ar', {
-        requiredFeatures: ['hit-test', 'local-floor'],
-        optionalFeatures: ['dom-overlay', 'light-estimation'],
-        domOverlay: { root: containerRef.current },
-      });
-      setIsWebXRSessionActive(true);
-      rendererRef.current.xr.enabled = true;
-      await rendererRef.current.xr.setSession(session);
+  // Build Procedural 3D Model tailored for each product type in true dimensions
+  const buildProduct3DModel = useCallback((prod: DimosProduct, cfg: ProductConfig) => {
+    const root = new THREE.Group();
 
-      session.addEventListener('end', () => {
-        setIsWebXRSessionActive(false);
+    const bodyMat = new THREE.MeshStandardMaterial({
+      color: new THREE.Color(cfg.material.bodyColor),
+      metalness: cfg.material.metalness,
+      roughness: cfg.material.roughness,
+    });
+
+    const accentMat = new THREE.MeshStandardMaterial({
+      color: new THREE.Color(cfg.material.accentColor),
+      roughness: 0.9,
+    });
+
+    const woodObj = WOOD_FINISH_OPTIONS.find((w) => w.id === cfg.woodFinish) || WOOD_FINISH_OPTIONS[0];
+    const woodMat = new THREE.MeshStandardMaterial({
+      color: new THREE.Color(woodObj.color),
+      roughness: 0.5,
+    });
+
+    const metalObj = METAL_ACCENT_OPTIONS.find((m) => m.id === cfg.metalAccent) || METAL_ACCENT_OPTIONS[0];
+    const metalMat = new THREE.MeshStandardMaterial({
+      color: new THREE.Color(metalObj.color),
+      roughness: 0.2,
+      metalness: 0.9,
+    });
+
+    const marbleObj = MARBLE_FINISH_OPTIONS.find((m) => m.id === cfg.marbleFinish) || MARBLE_FINISH_OPTIONS[0];
+    const marbleMat = new THREE.MeshStandardMaterial({
+      color: new THREE.Color(marbleObj.color),
+      roughness: 0.1,
+      metalness: 0.1,
+    });
+
+    const type = prod.arModelType;
+
+    if (type === 'l_shape') {
+      // Large L-Shape Sectional (3.2m x 1.85m)
+      const baseGeo = new THREE.BoxGeometry(3.4, 0.18, 1.2);
+      const base = new THREE.Mesh(baseGeo, woodMat);
+      base.position.set(0, -0.75, 0);
+      root.add(base);
+
+      // Chaise lounge extension
+      const chaiseBaseGeo = new THREE.BoxGeometry(1.2, 0.18, 1.2);
+      const chaiseBase = new THREE.Mesh(chaiseBaseGeo, woodMat);
+      chaiseBase.position.set(1.1, -0.75, 1.0);
+      root.add(chaiseBase);
+
+      // Cushions
+      [-1.1, 0, 1.1].forEach((x) => {
+        const cGeo = new THREE.BoxGeometry(1.05, 0.38, 1.1);
+        const cMesh = new THREE.Mesh(cGeo, bodyMat);
+        cMesh.position.set(x, -0.45, 0.05);
+        root.add(cMesh);
       });
-    } catch (err) {
-      console.warn('WebXR session error:', err);
+
+      // Chaise cushion
+      const chaiseCushGeo = new THREE.BoxGeometry(1.05, 0.38, 1.1);
+      const chaiseCush = new THREE.Mesh(chaiseCushGeo, bodyMat);
+      chaiseCush.position.set(1.1, -0.45, 1.0);
+      root.add(chaiseCush);
+
+      // Backrest
+      const backGeo = new THREE.BoxGeometry(3.4, 0.75, 0.3);
+      const back = new THREE.Mesh(backGeo, bodyMat);
+      back.position.set(0, 0.1, -0.45);
+      root.add(back);
+
+      // Armrests
+      const armGeo = new THREE.BoxGeometry(0.3, 0.55, 1.2);
+      const leftArm = new THREE.Mesh(armGeo, bodyMat);
+      leftArm.position.set(-1.75, -0.1, 0);
+      root.add(leftArm);
+
+      // Accent Pillows
+      const pGeo = new THREE.BoxGeometry(0.45, 0.45, 0.18);
+      const p1 = new THREE.Mesh(pGeo, accentMat);
+      p1.position.set(-1.3, -0.05, -0.1);
+      p1.rotation.set(-0.2, 0.3, 0);
+      root.add(p1);
+    } else if (type === 'recliner') {
+      // Ergonomic Motion Recliner
+      const seatGeo = new THREE.BoxGeometry(1.0, 0.4, 0.95);
+      const seat = new THREE.Mesh(seatGeo, bodyMat);
+      seat.position.set(0, -0.4, 0);
+      root.add(seat);
+
+      const backGeo = new THREE.BoxGeometry(0.95, 0.95, 0.3);
+      const back = new THREE.Mesh(backGeo, bodyMat);
+      back.position.set(0, 0.25, -0.35);
+      back.rotation.x = -0.15;
+      root.add(back);
+
+      const headrestGeo = new THREE.BoxGeometry(0.8, 0.3, 0.25);
+      const headrest = new THREE.Mesh(headrestGeo, bodyMat);
+      headrest.position.set(0, 0.8, -0.4);
+      root.add(headrest);
+
+      const footrestGeo = new THREE.BoxGeometry(0.9, 0.2, 0.5);
+      const footrest = new THREE.Mesh(footrestGeo, bodyMat);
+      footrest.position.set(0, -0.6, 0.65);
+      footrest.rotation.x = 0.25;
+      root.add(footrest);
+
+      // Swivel Base
+      const baseGeo = new THREE.CylinderGeometry(0.48, 0.52, 0.12, 32);
+      const base = new THREE.Mesh(baseGeo, metalMat);
+      base.position.set(0, -0.85, 0);
+      root.add(base);
+    } else if (type === 'bed') {
+      // King Size Bed (2.0m x 2.0m)
+      const headboardGeo = new THREE.BoxGeometry(2.4, 1.4, 0.25);
+      const headboard = new THREE.Mesh(headboardGeo, bodyMat);
+      headboard.position.set(0, 0.1, -1.1);
+      root.add(headboard);
+
+      const mattressGeo = new THREE.BoxGeometry(2.0, 0.45, 2.0);
+      const mattress = new THREE.Mesh(mattressGeo, bodyMat);
+      mattress.position.set(0, -0.38, 0);
+      root.add(mattress);
+
+      const duvetGeo = new THREE.BoxGeometry(2.05, 0.2, 1.4);
+      const duvet = new THREE.Mesh(duvetGeo, accentMat);
+      duvet.position.set(0, -0.15, 0.3);
+      root.add(duvet);
+
+      // Pillows
+      [-0.55, 0.55].forEach((px) => {
+        const pillowGeo = new THREE.BoxGeometry(0.65, 0.25, 0.4);
+        const pillow = new THREE.Mesh(pillowGeo, bodyMat);
+        pillow.position.set(px, -0.05, -0.7);
+        pillow.rotation.x = 0.2;
+        root.add(pillow);
+      });
+
+      // Bedside Tables
+      [-1.35, 1.35].forEach((nx) => {
+        const nsGeo = new THREE.BoxGeometry(0.5, 0.5, 0.45);
+        const ns = new THREE.Mesh(nsGeo, woodMat);
+        ns.position.set(nx, -0.55, -0.9);
+        root.add(ns);
+      });
+    } else if (type === 'coffee_table') {
+      // Marble Coffee Table Set
+      const topGeo = new THREE.CylinderGeometry(0.9, 0.9, 0.06, 40);
+      const top = new THREE.Mesh(topGeo, marbleMat);
+      top.position.set(0, -0.45, 0);
+      root.add(top);
+
+      const legGeo = new THREE.CylinderGeometry(0.6, 0.65, 0.45, 32);
+      const leg = new THREE.Mesh(legGeo, metalMat);
+      leg.position.set(0, -0.7, 0);
+      root.add(leg);
+
+      // Smaller Nesting Table
+      const subTopGeo = new THREE.CylinderGeometry(0.5, 0.5, 0.05, 32);
+      const subTop = new THREE.Mesh(subTopGeo, marbleMat);
+      subTop.position.set(0.85, -0.35, 0.3);
+      root.add(subTop);
+    } else if (type === 'dining_table') {
+      // 8-Seater Dining Table
+      const tableGeo = new THREE.BoxGeometry(2.4, 0.08, 1.1);
+      const tableTop = new THREE.Mesh(tableGeo, marbleMat);
+      tableTop.position.set(0, -0.1, 0);
+      root.add(tableTop);
+
+      // Legs
+      [-0.9, 0.9].forEach((lx) => {
+        const leg = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.75, 0.8), woodMat);
+        leg.position.set(lx, -0.5, 0);
+        root.add(leg);
+      });
+
+      // Chairs around table
+      [-0.7, 0, 0.7].forEach((cx) => {
+        // Front chairs
+        const c1 = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.45, 0.45), bodyMat);
+        c1.position.set(cx, -0.45, 0.8);
+        root.add(c1);
+
+        // Back chairs
+        const c2 = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.45, 0.45), bodyMat);
+        c2.position.set(cx, -0.45, -0.8);
+        root.add(c2);
+      });
+    } else {
+      // Default: 3-Seater / Modular Sofa
+      const baseGeo = new THREE.BoxGeometry(2.8, 0.18, 1.1);
+      const base = new THREE.Mesh(baseGeo, woodMat);
+      base.position.set(0, -0.75, 0);
+      root.add(base);
+
+      [-0.85, 0, 0.85].forEach((cx) => {
+        const seatGeo = new THREE.BoxGeometry(0.82, 0.38, 0.95);
+        const seat = new THREE.Mesh(seatGeo, bodyMat);
+        seat.position.set(cx, -0.45, 0.05);
+        root.add(seat);
+      });
+
+      const backGeo = new THREE.BoxGeometry(2.8, 0.7, 0.3);
+      const back = new THREE.Mesh(backGeo, bodyMat);
+      back.position.set(0, 0.1, -0.4);
+      root.add(back);
+
+      const armGeo = new THREE.BoxGeometry(0.28, 0.55, 1.05);
+      const leftArm = new THREE.Mesh(armGeo, bodyMat);
+      leftArm.position.set(-1.45, -0.1, 0);
+      root.add(leftArm);
+
+      const rightArm = new THREE.Mesh(armGeo, bodyMat);
+      rightArm.position.set(1.45, -0.1, 0);
+      root.add(rightArm);
     }
-  };
+
+    return root;
+  }, []);
 
   // Initialize ThreeJS AR Canvas
   useEffect(() => {
     if (!isOpen) return;
 
-    // Start user video
     startCameraStream(facingMode);
 
     const container = containerRef.current;
@@ -194,11 +371,11 @@ export const ARRoomViewer: React.FC<ARRoomViewerProps> = ({
     sceneRef.current = scene;
 
     // Camera
-    const camera = new THREE.PerspectiveCamera(50, width / height, 0.05, 50);
-    camera.position.set(0, 0, 0);
+    const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 50);
+    camera.position.set(0, 0.3, 0);
     cameraRef.current = camera;
 
-    // WebGL Renderer with Alpha transparent background for video pass-through
+    // WebGL Renderer with Alpha
     const renderer = new THREE.WebGLRenderer({
       canvas: canvasRef.current || undefined,
       alpha: true,
@@ -214,105 +391,52 @@ export const ARRoomViewer: React.FC<ARRoomViewerProps> = ({
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     rendererRef.current = renderer;
 
-    // AR Root Object (holds the camera model, shadow, and position offset)
+    // AR Root Object
     const arRoot = new THREE.Group();
     arRoot.position.set(modelPosRef.current.x, modelPosRef.current.y, modelPosRef.current.z);
     scene.add(arRoot);
     arRootGroupRef.current = arRoot;
 
-    // Lighting (Environment light simulator matching realistic room daylight)
-    const ambientLight = new THREE.AmbientLight(0xffffff, 1.4);
+    // Lights
+    const ambientLight = new THREE.AmbientLight(0xffeedd, 1.8);
     scene.add(ambientLight);
 
-    const keySunLight = new THREE.DirectionalLight(0xfff8e7, 2.2);
-    keySunLight.position.set(2, 6, 4);
-    keySunLight.castShadow = true;
-    keySunLight.shadow.mapSize.width = 1024;
-    keySunLight.shadow.mapSize.height = 1024;
-    scene.add(keySunLight);
+    const sunKey = new THREE.DirectionalLight(0xffffff, 2.5);
+    sunKey.position.set(4, 7, 5);
+    sunKey.castShadow = true;
+    scene.add(sunKey);
 
-    const fillRoomLight = new THREE.DirectionalLight(0x90caf9, 1.0);
-    fillRoomLight.position.set(-3, -2, 2);
-    scene.add(fillRoomLight);
+    const bounceWarm = new THREE.PointLight(0xd4af37, 2.0, 10);
+    bounceWarm.position.set(-2, 3, 2);
+    scene.add(bounceWarm);
 
-    // Realistic Floor Shadow Receiver Plane
-    const shadowGeo = new THREE.PlaneGeometry(3.5, 3.5);
-    const shadowMat = new THREE.ShadowMaterial({
-      opacity: 0.45,
-    });
+    // Floor Shadow Receiver
+    const shadowGeo = new THREE.PlaneGeometry(8, 8);
+    const shadowMat = new THREE.ShadowMaterial({ opacity: 0.45 });
     const shadowPlane = new THREE.Mesh(shadowGeo, shadowMat);
     shadowPlane.rotation.x = -Math.PI / 2;
-    shadowPlane.position.y = -1.4;
+    shadowPlane.position.y = -1.0;
     shadowPlane.receiveShadow = true;
     arRoot.add(shadowPlane);
-    shadowPlaneRef.current = shadowPlane;
 
-    // Placement Reticle Circle (Target indicator on the room plane)
-    const reticleGroup = new THREE.Group();
-    const reticleRingGeo = new THREE.RingGeometry(0.7, 0.76, 48);
-    const reticleMat = new THREE.MeshBasicMaterial({
-      color: 0x00f0ff,
-      side: THREE.DoubleSide,
-      transparent: true,
-      opacity: 0.8,
-    });
-    const reticleMesh = new THREE.Mesh(reticleRingGeo, reticleMat);
-    reticleMesh.rotation.x = -Math.PI / 2;
-    reticleMesh.position.y = -1.39;
-    reticleGroup.add(reticleMesh);
+    // Floor Metric Grid (1m x 1m lines)
+    const gridHelper = new THREE.GridHelper(6, 6, 0xd4af37, 0x555555);
+    gridHelper.position.y = -0.99;
+    gridHelper.name = 'metricGrid';
+    arRoot.add(gridHelper);
 
-    // Inner pulsating dot
-    const centerDotGeo = new THREE.CircleGeometry(0.12, 32);
-    const centerDotMat = new THREE.MeshBasicMaterial({
-      color: 0x38bdf8,
-      transparent: true,
-      opacity: 0.9,
-    });
-    const centerDot = new THREE.Mesh(centerDotGeo, centerDotMat);
-    centerDot.rotation.x = -Math.PI / 2;
-    centerDot.position.y = -1.38;
-    reticleGroup.add(centerDot);
+    // Build Model
+    const modelGroup = buildProduct3DModel(selectedProduct, config);
+    arRoot.add(modelGroup);
+    furnitureGroupRef.current = modelGroup;
 
-    arRoot.add(reticleGroup);
-    reticleGroupRef.current = reticleGroup;
-
-    // Build the 3D Camera Model
-    const model = buildCamera3DModel(config);
-    model.group.scale.set(0.65, 0.65, 0.65);
-    arRoot.add(model.group);
-    modelInstanceRef.current = model;
-
-    // Animation & Render Loop
-    let clock = new THREE.Clock();
+    // Render loop
     const animate = () => {
       requestAnimFrameRef.current = requestAnimationFrame(animate);
-
-      const delta = clock.getDelta();
-      const elapsed = clock.getElapsedTime();
-
-      // Pulsate Reticle animation
-      if (reticleGroup) {
-        const pulse = 1 + Math.sin(elapsed * 4) * 0.08;
-        reticleGroup.scale.set(pulse, 1, pulse);
-      }
-
-      // Alarm Strobe flashing in AR
-      if (modelInstanceRef.current && arAlarmActive) {
-        const strobePhase = Math.floor(elapsed * 12) % 2;
-        if (modelInstanceRef.current.parts.alarmStrobeLeft) {
-          modelInstanceRef.current.parts.alarmStrobeLeft.intensity = strobePhase === 0 ? 6 : 0;
-        }
-        if (modelInstanceRef.current.parts.alarmStrobeRight) {
-          modelInstanceRef.current.parts.alarmStrobeRight.intensity = strobePhase === 1 ? 6 : 0;
-        }
-      }
-
       renderer.render(scene, camera);
     };
-
     animate();
 
-    // Handle Window Resize
     const handleResize = () => {
       if (!containerRef.current || !rendererRef.current || !cameraRef.current) return;
       const w = containerRef.current.clientWidth;
@@ -329,63 +453,25 @@ export const ARRoomViewer: React.FC<ARRoomViewerProps> = ({
       if (requestAnimFrameRef.current) {
         cancelAnimationFrame(requestAnimFrameRef.current);
       }
-      soundFx.stopAlarmSiren();
       stopCameraStream();
       renderer.dispose();
       scene.clear();
     };
-  }, [isOpen, startCameraStream, stopCameraStream, facingMode]);
+  }, [isOpen, startCameraStream, stopCameraStream, facingMode, selectedProduct, buildProduct3DModel, config]);
 
-  // Update model placement & orientation when mode or sliders change
+  // Update scale & rotation
   useEffect(() => {
-    if (!arRootGroupRef.current || !modelInstanceRef.current) return;
-
-    // Scale
-    const baseScale = placementMode === 'wall' ? 0.65 : placementMode === 'gate' ? 0.72 : 0.55;
-    const finalScale = baseScale * scaleFactor;
-    modelInstanceRef.current.group.scale.set(finalScale, finalScale, finalScale);
-
-    // Rotation & Elevation
+    if (!arRootGroupRef.current || !furnitureGroupRef.current) return;
+    furnitureGroupRef.current.scale.set(scaleFactor, scaleFactor, scaleFactor);
     arRootGroupRef.current.rotation.y = rotationY;
-    arRootGroupRef.current.position.y = modelPosRef.current.y + elevationY;
+  }, [scaleFactor, rotationY]);
 
-    // Solar tilt adjustment based on placement archetype
-    if (placementMode === 'wall') {
-      modelInstanceRef.current.parts.solarPanelGroup.rotation.x = -0.45;
-      modelInstanceRef.current.parts.wallBracketGroup.position.set(0, 0.4, -0.75);
-    } else if (placementMode === 'gate') {
-      modelInstanceRef.current.parts.solarPanelGroup.rotation.x = -0.25;
-      modelInstanceRef.current.parts.wallBracketGroup.position.set(0, 0.4, -0.75);
-    } else {
-      // Tabletop/desk stand
-      modelInstanceRef.current.parts.solarPanelGroup.rotation.x = -0.15;
-    }
-  }, [placementMode, scaleFactor, rotationY, elevationY]);
-
-  // Update PTZ lens angles
-  useEffect(() => {
-    if (modelInstanceRef.current) {
-      modelInstanceRef.current.updatePTZ(ptzPan, ptzTilt);
-    }
-  }, [ptzPan, ptzTilt]);
-
-  // Update materials when user changes color
-  useEffect(() => {
-    if (modelInstanceRef.current) {
-      modelInstanceRef.current.updateConfig(config);
-    }
-  }, [config]);
-
-  // Touch / Drag event handlers for positioning camera in room
+  // Touch handlers
   const handleTouchStart = (e: React.TouchEvent | React.MouseEvent) => {
-    if (isLockedPlacement) return;
-
     if ('touches' in e && e.touches.length === 2) {
       const dx = e.touches[0].clientX - e.touches[1].clientX;
       const dy = e.touches[0].clientY - e.touches[1].clientY;
-      const dist = Math.hypot(dx, dy);
-      const angle = Math.atan2(dy, dx);
-      touchStartRef.current = { x: 0, y: 0, dist, angle };
+      touchStartRef.current = { x: 0, y: 0, dist: Math.hypot(dx, dy), angle: Math.atan2(dy, dx) };
     } else {
       const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
       const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
@@ -394,7 +480,7 @@ export const ARRoomViewer: React.FC<ARRoomViewerProps> = ({
   };
 
   const handleTouchMove = (e: React.TouchEvent | React.MouseEvent) => {
-    if (isLockedPlacement || !arRootGroupRef.current) return;
+    if (!arRootGroupRef.current) return;
 
     if ('touches' in e && e.touches.length === 2) {
       const dx = e.touches[0].clientX - e.touches[1].clientX;
@@ -403,11 +489,8 @@ export const ARRoomViewer: React.FC<ARRoomViewerProps> = ({
       const angle = Math.atan2(dy, dx);
 
       if (touchStartRef.current.dist > 0) {
-        // Pinch zoom
         const scaleDelta = dist / touchStartRef.current.dist;
-        setScaleFactor((prev) => Math.max(0.4, Math.min(2.5, prev * (1 + (scaleDelta - 1) * 0.5))));
-
-        // Two-finger twist rotation
+        setScaleFactor((prev) => Math.max(0.4, Math.min(2.0, prev * (1 + (scaleDelta - 1) * 0.5))));
         const angleDelta = angle - touchStartRef.current.angle;
         setRotationY((prev) => prev - angleDelta * 0.8);
       }
@@ -418,21 +501,21 @@ export const ARRoomViewer: React.FC<ARRoomViewerProps> = ({
       const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
       const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
 
-      const deltaX = (clientX - touchStartRef.current.x) * 0.005;
-      const deltaY = (clientY - touchStartRef.current.y) * 0.005;
+      const deltaX = (clientX - touchStartRef.current.x) * 0.006;
+      const deltaY = (clientY - touchStartRef.current.y) * 0.006;
 
       modelPosRef.current.x += deltaX;
       modelPosRef.current.y -= deltaY;
 
       arRootGroupRef.current.position.x = modelPosRef.current.x;
-      arRootGroupRef.current.position.y = modelPosRef.current.y + elevationY;
+      arRootGroupRef.current.position.y = modelPosRef.current.y;
 
       touchStartRef.current.x = clientX;
       touchStartRef.current.y = clientY;
     }
   };
 
-  // Capture AR Snapshot photo with watermark
+  // Capture Photo with official Dimos stamp
   const handleTakeSnapshot = () => {
     soundFx.playCameraShutter();
     if (!canvasRef.current || !videoRef.current) return;
@@ -446,43 +529,35 @@ export const ARRoomViewer: React.FC<ARRoomViewerProps> = ({
     const ctx = snapCanvas.getContext('2d');
     if (!ctx) return;
 
-    // Draw live video background
     if (cameraActive && videoRef.current) {
       ctx.drawImage(videoRef.current, 0, 0, width, height);
     } else {
-      // Dark room gradient simulation
       const grad = ctx.createLinearGradient(0, 0, 0, height);
-      grad.addColorStop(0, '#0f172a');
-      grad.addColorStop(1, '#020617');
+      grad.addColorStop(0, '#1c1917');
+      grad.addColorStop(1, '#0c0a09');
       ctx.fillStyle = grad;
       ctx.fillRect(0, 0, width, height);
     }
 
-    // Draw 3D Camera layer
     ctx.drawImage(canvasRef.current, 0, 0, width, height);
 
-    // Draw Sleek Watermark & Product Badge
-    ctx.fillStyle = 'rgba(2, 6, 23, 0.85)';
-    ctx.roundRect(24, height - 80, 360, 56, 16);
+    // Official Stamp
+    ctx.fillStyle = 'rgba(12, 10, 9, 0.9)';
+    ctx.roundRect(24, height - 90, 480, 68, 16);
     ctx.fill();
 
-    ctx.strokeStyle = 'rgba(6, 182, 212, 0.4)';
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
-
-    ctx.fillStyle = '#38bdf8';
-    ctx.font = 'bold 16px sans-serif';
+    ctx.fillStyle = '#E30613';
+    ctx.font = 'bold 18px sans-serif';
     ctx.direction = 'rtl';
-    ctx.fillText('كاميرا V380 Pro بالطاقة الشمسية وشريحة 4G', 364, height - 52);
+    ctx.fillText(`ديموس • ${selectedProduct.title}`, 480, height - 60);
 
-    ctx.fillStyle = '#94a3b8';
+    ctx.fillStyle = '#d4af37';
     ctx.font = '12px sans-serif';
-    ctx.fillText('معاينة الواقع المعزز AR • تجربة التثبيت في الموقع', 364, height - 34);
+    ctx.fillText(`المقاس الحقيقي: ${selectedProduct.dimensions.formatted}`, 480, height - 38);
 
-    // Download snapshot
     const dataUrl = snapCanvas.toDataURL('image/jpeg', 0.92);
     const link = document.createElement('a');
-    link.download = `V380-AR-Room-Snapshot-${Date.now()}.jpg`;
+    link.download = `Dimoss-AR-${selectedProduct.sku}-${Date.now()}.jpg`;
     link.href = dataUrl;
     link.click();
 
@@ -490,27 +565,12 @@ export const ARRoomViewer: React.FC<ARRoomViewerProps> = ({
     setTimeout(() => setSnapshotSuccess(false), 3500);
   };
 
-  // Trigger Police Alarm & Siren test in AR
-  const toggleArAlarm = () => {
-    const next = !arAlarmActive;
-    setArAlarmActive(next);
-    if (next) {
-      soundFx.startAlarmSiren();
-      setTimeout(() => {
-        soundFx.playVoiceAlert('تنبيه أمني! تم رصد حركة، جاري إطلاق الإنذار');
-      }, 300);
-    } else {
-      soundFx.stopAlarmSiren();
-    }
-  };
-
-  // Toggle Floodlight in AR
-  const toggleArFloodlight = () => {
-    const next = !arFloodlightActive;
-    setArFloodlightActive(next);
+  const handleProductChange = (prod: DimosProduct) => {
     soundFx.playClick();
-    if (modelInstanceRef.current) {
-      modelInstanceRef.current.materials.glowLedMat.emissiveIntensity = next ? 5.0 : 2.5;
+    setSelectedProduct(prod);
+    setScaleFactor(1.0); // Reset to 1:1 true scale
+    if (onSelectProduct) {
+      onSelectProduct(prod);
     }
   };
 
@@ -528,7 +588,6 @@ export const ARRoomViewer: React.FC<ARRoomViewerProps> = ({
         onTouchMove={handleTouchMove}
         className="relative flex-1 w-full h-full overflow-hidden cursor-move touch-none"
       >
-        {/* Hidden video element feeding the camera stream */}
         <video
           ref={videoRef}
           autoPlay
@@ -539,69 +598,67 @@ export const ARRoomViewer: React.FC<ARRoomViewerProps> = ({
           }`}
         />
 
-        {/* Fallback Ambient Room Simulation when camera is unavailable */}
         {!cameraActive && (
-          <div className="absolute inset-0 bg-gradient-to-b from-neutral-900 via-neutral-950 to-neutral-900 flex flex-col items-center justify-center p-6 text-center">
-            <div className="w-16 h-16 rounded-full bg-cyan-950/80 border border-cyan-500/40 flex items-center justify-center text-cyan-400 mb-4 animate-pulse">
+          <div className="absolute inset-0 bg-gradient-to-b from-stone-900 via-neutral-950 to-stone-900 flex flex-col items-center justify-center p-6 text-center">
+            <div className="w-16 h-16 rounded-full bg-red-950/80 border border-red-500/40 flex items-center justify-center text-red-400 mb-4 animate-pulse">
               <Scan className="w-8 h-8" />
             </div>
             <h3 className="text-xl font-bold text-neutral-100 mb-1">
-              محاكاة الغرفة ثلاثية الأبعاد (AR 3D)
+              معاينة {selectedProduct.title} في غرفتك (AR 3D)
             </h3>
             <p className="text-xs text-neutral-400 max-w-md leading-relaxed mb-4">
-              يمكنك سحب وتدوير وتغيير مقاس الكاميرا لتجربة شكلها على الجدار أو الطاولة. اضغط على زر تفعيل الكاميرا للمعاينة المباشرة عبر كاميرا هاتفك.
+              المقاس الحقيقي 1:1 ({selectedProduct.dimensions.formatted}). اضغط لتفعيل الكاميرا وإسقاط القطعة في صالتك أو مجلسك مباشرة.
             </p>
             <button
               onClick={() => startCameraStream(facingMode)}
-              className="px-4 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-neutral-950 font-bold text-xs flex items-center gap-2 shadow-lg shadow-cyan-500/20"
+              className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-red-600 to-red-700 text-white font-bold text-xs flex items-center gap-2 shadow-xl shadow-red-900/40"
             >
               <Camera className="w-4 h-4" />
-              <span>إعادة تشغيل كاميرا الجوال</span>
+              <span>تشغيل كاميرا الجوال للواقع المعزز</span>
             </button>
           </div>
         )}
 
-        {/* WebGL 3D Canvas Layer */}
         <canvas ref={canvasRef} className="absolute inset-0 w-full h-full pointer-events-none" />
 
-        {/* 2. Top Header Overlay Bar */}
-        <div className="absolute top-0 left-0 right-0 p-4 sm:p-6 bg-gradient-to-b from-neutral-950/90 via-neutral-950/40 to-transparent flex items-center justify-between z-20 pointer-events-auto">
+        {/* Top Header Overlay Bar */}
+        <div className="absolute top-0 left-0 right-0 p-4 sm:p-6 bg-gradient-to-b from-neutral-950/95 via-neutral-950/60 to-transparent flex items-center justify-between z-20 pointer-events-auto">
           
-          {/* Brand & AR Mode Pill */}
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-cyan-500 text-neutral-950 flex items-center justify-center font-bold">
-              <Scan className="w-4 h-4" />
+          <div className="flex items-center gap-3">
+            <div className="p-1 rounded-xl bg-white shadow-md border border-neutral-200">
+              <DimossLogo variant="full" size="sm" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="font-extrabold text-sm text-neutral-100">
-                  العرض في غرفتك <span className="text-cyan-400 text-xs">WebXR • AR</span>
+                <span className="font-black text-xs sm:text-sm text-neutral-100">
+                  {selectedProduct.title}
                 </span>
-                <span className="px-2 py-0.5 rounded-full bg-emerald-950/80 text-emerald-300 border border-emerald-700/50 text-[10px] font-bold">
-                  مباشر 3D
+                <span className="px-2 py-0.5 rounded-full bg-red-950/80 text-red-300 border border-red-700/50 text-[10px] font-bold">
+                  AR 1:1
                 </span>
               </div>
-              <p className="text-[11px] text-neutral-300 hidden sm:block">
-                اسحب وحرّك الكاميرا لتحديد الموقع الأنسب للتثبيت
+              <p className="text-[11px] text-amber-400 font-bold hidden sm:block">
+                📏 {selectedProduct.dimensions.formatted}
               </p>
             </div>
           </div>
 
-          {/* Quick Actions (Camera flip, Help, Native WebXR, Close) */}
           <div className="flex items-center gap-2">
-            {webXRSupported && (
-              <button
-                onClick={launchNativeWebXR}
-                className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-cyan-500 to-sky-400 text-neutral-950 text-xs font-bold shadow-lg"
-              >
-                <Maximize className="w-3.5 h-3.5" />
-                <span>جلسة WebXR</span>
-              </button>
-            )}
+            <button
+              onClick={() => {
+                soundFx.playClick();
+                setScaleFactor(1.0); // Reset to 1:1 true metric
+              }}
+              className="px-2.5 py-1.5 rounded-xl bg-neutral-900/90 border border-neutral-700 text-amber-400 hover:text-amber-300 text-xs font-bold transition-colors flex items-center gap-1"
+              title="إعادة ضبط المقاس للأبعاد الحقيقية 1:1"
+            >
+              <Ruler className="w-3.5 h-3.5" />
+              <span>1:1 حقيقي</span>
+            </button>
 
             <button
               onClick={toggleCameraFacing}
-              className="p-2.5 rounded-xl bg-neutral-900/80 border border-neutral-800 text-neutral-300 hover:text-cyan-400 hover:border-cyan-500/50 transition-colors"
+              className="p-2.5 rounded-xl bg-neutral-900/80 border border-neutral-800 text-neutral-300 hover:text-amber-400 transition-colors"
               title="تبديل الكاميرا الخلفية / الأمامية"
             >
               <RefreshCw className="w-4 h-4" />
@@ -609,7 +666,7 @@ export const ARRoomViewer: React.FC<ARRoomViewerProps> = ({
 
             <button
               onClick={() => setShowHelpModal(!showHelpModal)}
-              className="p-2.5 rounded-xl bg-neutral-900/80 border border-neutral-800 text-neutral-300 hover:text-cyan-400 transition-colors"
+              className="p-2.5 rounded-xl bg-neutral-900/80 border border-neutral-800 text-neutral-300 hover:text-amber-400 transition-colors"
               title="تعليمات الاستخدام"
             >
               <HelpCircle className="w-4 h-4" />
@@ -620,7 +677,7 @@ export const ARRoomViewer: React.FC<ARRoomViewerProps> = ({
                 soundFx.playClick();
                 onClose();
               }}
-              className="p-2.5 rounded-xl bg-neutral-900/90 border border-neutral-800 text-neutral-400 hover:text-white hover:bg-rose-950 hover:border-rose-700 transition-colors"
+              className="p-2.5 rounded-xl bg-neutral-900/90 border border-neutral-800 text-neutral-400 hover:text-white hover:bg-red-950 transition-colors"
               title="إغلاق الواقع المعزز"
             >
               <X className="w-4 h-4" />
@@ -628,304 +685,209 @@ export const ARRoomViewer: React.FC<ARRoomViewerProps> = ({
           </div>
         </div>
 
-        {/* 3. Center Guidance Reticle Banner */}
+        {/* Center Guidance Reticle Banner */}
         <div className="absolute top-20 left-1/2 -translate-x-1/2 z-10 pointer-events-none text-center">
-          <div className="px-4 py-1.5 rounded-full bg-neutral-950/80 border border-cyan-500/40 text-[11px] font-medium text-cyan-300 backdrop-blur-md shadow-xl flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
-            <span>اسحب بإصبعك لتحريك الكاميرا • قرّب بإصبعين لتغيير الحجم</span>
+          <div className="px-4 py-1.5 rounded-full bg-neutral-950/85 border border-red-500/40 text-[11px] font-bold text-neutral-200 backdrop-blur-md shadow-xl flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-red-500 animate-ping" />
+            <span>اسحب بإصبعك لتحريك المنتج • قرّب بإصبعين لتكبير وتدوير الزاوية</span>
           </div>
         </div>
 
-        {/* Notification Toast when snapshot is taken */}
+        {/* Toast */}
         {snapshotSuccess && (
-          <div className="absolute top-32 left-1/2 -translate-x-1/2 z-30 px-5 py-2.5 rounded-2xl bg-emerald-950/95 border border-emerald-500 text-emerald-200 text-xs font-bold backdrop-blur-xl shadow-2xl flex items-center gap-2 animate-in fade-in zoom-in-90 duration-200">
+          <div className="absolute top-32 left-1/2 -translate-x-1/2 z-30 px-5 py-2.5 rounded-2xl bg-red-950/95 border border-red-500 text-red-100 text-xs font-bold backdrop-blur-xl shadow-2xl flex items-center gap-2 animate-in fade-in zoom-in-90 duration-200">
             <Check className="w-4 h-4 text-emerald-400" />
-            <span>تم حفظ صورة المعاينة في جهازك بنجاح! 📸</span>
+            <span>تم حفظ صورة الغرفة مع مواصفات ومقاسات ديموس في ألبوم الصور! 📸</span>
           </div>
         )}
 
-        {/* Floating Side Action Shortcuts (Snapshot, Alarm, Light) */}
+        {/* Floating Snapshot & Price Overlay */}
         <div className="absolute left-4 top-1/2 -translate-y-1/2 z-20 flex flex-col gap-3 pointer-events-auto">
-          {/* Snapshot Photo Button */}
           <button
             onClick={handleTakeSnapshot}
-            className="w-12 h-12 rounded-2xl bg-cyan-500 hover:bg-cyan-400 text-neutral-950 flex flex-col items-center justify-center shadow-xl shadow-cyan-500/30 transition-transform active:scale-95 group"
-            title="التقاط صورة للغرفة مع الكاميرا"
+            className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-red-600 to-red-700 hover:from-red-500 text-white flex flex-col items-center justify-center shadow-xl shadow-red-900/40 transition-transform active:scale-95 group"
+            title="التقاط صورة للغرفة مع منتج ديموس"
           >
             <Camera className="w-5 h-5 stroke-[2.5]" />
             <span className="text-[9px] font-black">لقطة</span>
-          </button>
-
-          {/* Alarm Siren Test Button */}
-          <button
-            onClick={toggleArAlarm}
-            className={`w-12 h-12 rounded-2xl border flex flex-col items-center justify-center shadow-xl transition-all active:scale-95 ${
-              arAlarmActive
-                ? 'bg-rose-600 border-rose-400 text-white animate-pulse shadow-rose-600/40'
-                : 'bg-neutral-900/85 border-neutral-800 text-neutral-300 hover:text-rose-400 hover:border-rose-500/50'
-            }`}
-            title="تجربة إنذار وصفارة الكاميرا"
-          >
-            <ShieldAlert className="w-5 h-5" />
-            <span className="text-[9px] font-bold">إنذار</span>
-          </button>
-
-          {/* Floodlight Toggle Button */}
-          <button
-            onClick={toggleArFloodlight}
-            className={`w-12 h-12 rounded-2xl border flex flex-col items-center justify-center shadow-xl transition-all active:scale-95 ${
-              arFloodlightActive
-                ? 'bg-amber-500 border-amber-400 text-neutral-950 font-bold shadow-amber-500/40'
-                : 'bg-neutral-900/85 border-neutral-800 text-neutral-300 hover:text-amber-400 hover:border-amber-500/50'
-            }`}
-            title="تشغيل كشافات الإضاءة الليلية"
-          >
-            <Zap className="w-5 h-5" />
-            <span className="text-[9px] font-bold">كشاف</span>
           </button>
         </div>
 
       </div>
 
-      {/* 4. Bottom Interactive Control Dashboard */}
-      <div className="relative z-20 bg-neutral-950/95 border-t border-neutral-800/90 backdrop-blur-2xl px-4 sm:px-6 py-4 space-y-3">
+      {/* Bottom Interactive Dashboard */}
+      <div className="relative z-20 bg-neutral-950/95 border-t border-neutral-800 backdrop-blur-2xl px-4 sm:px-6 py-4 space-y-3">
         
-        {/* Navigation Tabs (Placement, Colors, PTZ Swivel) */}
-        <div className="flex items-center justify-between border-b border-neutral-800/60 pb-3 gap-2">
+        <div className="flex items-center justify-between border-b border-neutral-800 pb-3 gap-2">
           
           <div className="flex items-center gap-1.5">
             <button
               onClick={() => {
                 soundFx.playClick();
-                setActiveTab('controls');
+                setActiveTab('products');
               }}
               className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
-                activeTab === 'controls'
-                  ? 'bg-cyan-500 text-neutral-950 shadow-md shadow-cyan-500/20'
+                activeTab === 'products'
+                  ? 'bg-red-600 text-white shadow-md shadow-red-900/30'
                   : 'bg-neutral-900 border border-neutral-800 text-neutral-400 hover:text-neutral-200'
               }`}
             >
-              طريقة التثبيت والحجم
+              تبديل المنتج في AR
             </button>
 
             <button
               onClick={() => {
                 soundFx.playClick();
-                setActiveTab('ptz');
+                setActiveTab('dimensions');
               }}
               className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
-                activeTab === 'ptz'
-                  ? 'bg-cyan-500 text-neutral-950 shadow-md shadow-cyan-500/20'
+                activeTab === 'dimensions'
+                  ? 'bg-red-600 text-white shadow-md shadow-red-900/30'
                   : 'bg-neutral-900 border border-neutral-800 text-neutral-400 hover:text-neutral-200'
               }`}
             >
-              تحريك العدسة 360° PTZ
+              المقاس وتدوير الزاوية
             </button>
 
             <button
               onClick={() => {
                 soundFx.playClick();
-                setActiveTab('presets');
+                setActiveTab('colors');
               }}
               className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
-                activeTab === 'presets'
-                  ? 'bg-cyan-500 text-neutral-950 shadow-md shadow-cyan-500/20'
+                activeTab === 'colors'
+                  ? 'bg-red-600 text-white shadow-md shadow-red-900/30'
                   : 'bg-neutral-900 border border-neutral-800 text-neutral-400 hover:text-neutral-200'
               }`}
             >
-              لون الهيكل الخارجي
+              الخامة والألوان
             </button>
           </div>
 
-          {/* Quick Order Button inside AR */}
-          <button
-            onClick={() => {
-              soundFx.playClick();
-              onClose();
-              onOpenReservation();
-            }}
-            className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-neutral-950 font-black text-xs shadow-lg shadow-amber-500/20 flex items-center gap-1.5 active:scale-95 transition-all"
-          >
-            <ShoppingBag className="w-3.5 h-3.5" />
-            <span>طلب الكاميرا الآن</span>
-          </button>
+          <div className="flex items-center gap-2">
+            <div className="text-left hidden sm:block">
+              <div className="text-xs font-black text-neutral-100">
+                {selectedProduct.price.toLocaleString()} ر.س
+              </div>
+              <div className="text-[10px] text-emerald-400 font-bold">
+                أو {Math.round(selectedProduct.tabbyInstallment)} ر.س / شهر
+              </div>
+            </div>
+
+            <button
+              onClick={() => {
+                soundFx.playClick();
+                onClose();
+                onOpenReservation();
+              }}
+              className="px-4 py-2 rounded-xl bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 text-white font-black text-xs shadow-lg shadow-red-900/30 flex items-center gap-1.5 active:scale-95 transition-all"
+            >
+              <ShoppingBag className="w-3.5 h-3.5" />
+              <span>طلب هذا الموديل الآن</span>
+            </button>
+          </div>
         </div>
 
-        {/* Tab 1: Placement & Scaling Controls */}
-        {activeTab === 'controls' && (
-          <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center">
-            
-            {/* Placement Mode Selector (Wall / Desk / Outdoor Gate) */}
-            <div className="sm:col-span-5 flex items-center gap-1.5">
-              <button
-                onClick={() => {
-                  soundFx.playClick();
-                  setPlacementMode('wall');
-                }}
-                className={`flex-1 py-2 px-2.5 rounded-xl text-xs font-bold border transition-all text-center ${
-                  placementMode === 'wall'
-                    ? 'bg-neutral-800 border-cyan-400 text-cyan-300'
-                    : 'bg-neutral-900/60 border-neutral-800 text-neutral-400 hover:text-neutral-200'
-                }`}
-              >
-                تثبيت جداري (شائع)
-              </button>
-
-              <button
-                onClick={() => {
-                  soundFx.playClick();
-                  setPlacementMode('gate');
-                }}
-                className={`flex-1 py-2 px-2.5 rounded-xl text-xs font-bold border transition-all text-center ${
-                  placementMode === 'gate'
-                    ? 'bg-neutral-800 border-cyan-400 text-cyan-300'
-                    : 'bg-neutral-900/60 border-neutral-800 text-neutral-400 hover:text-neutral-200'
-                }`}
-              >
-                بوابة / عمود خارجي
-              </button>
-
-              <button
-                onClick={() => {
-                  soundFx.playClick();
-                  setPlacementMode('desk');
-                }}
-                className={`flex-1 py-2 px-2.5 rounded-xl text-xs font-bold border transition-all text-center ${
-                  placementMode === 'desk'
-                    ? 'bg-neutral-800 border-cyan-400 text-cyan-300'
-                    : 'bg-neutral-900/60 border-neutral-800 text-neutral-400 hover:text-neutral-200'
-                }`}
-              >
-                سطح / طاولة
-              </button>
-            </div>
-
-            {/* Sliders: Scale & Rotation */}
-            <div className="sm:col-span-7 grid grid-cols-2 gap-3">
-              {/* Scale Slider */}
-              <div className="space-y-1">
-                <div className="flex justify-between text-[11px] text-neutral-400">
-                  <span>المقاس الحقيقي (1:1):</span>
-                  <span className="text-cyan-400 font-mono font-bold">{Math.round(scaleFactor * 100)}%</span>
-                </div>
-                <input
-                  type="range"
-                  min="0.5"
-                  max="1.8"
-                  step="0.05"
-                  value={scaleFactor}
-                  onChange={(e) => setScaleFactor(parseFloat(e.target.value))}
-                  className="w-full h-1.5 bg-neutral-800 rounded-lg appearance-none cursor-pointer accent-cyan-400"
-                />
-              </div>
-
-              {/* Rotation Slider */}
-              <div className="space-y-1">
-                <div className="flex justify-between text-[11px] text-neutral-400">
-                  <span>تدوير الزاوية:</span>
-                  <span className="text-cyan-400 font-mono font-bold">
-                    {Math.round((rotationY * 180) / Math.PI)}°
-                  </span>
-                </div>
-                <input
-                  type="range"
-                  min={-Math.PI}
-                  max={Math.PI}
-                  step="0.05"
-                  value={rotationY}
-                  onChange={(e) => setRotationY(parseFloat(e.target.value))}
-                  className="w-full h-1.5 bg-neutral-800 rounded-lg appearance-none cursor-pointer accent-cyan-400"
-                />
-              </div>
-            </div>
-
+        {/* Tab 1: Products Quick Carousel in AR */}
+        {activeTab === 'products' && (
+          <div className="flex items-center gap-2.5 overflow-x-auto pb-1 scrollbar-thin">
+            {DIMOS_PRODUCTS.map((prod) => {
+              const isCurrent = prod.id === selectedProduct.id;
+              return (
+                <button
+                  key={prod.id}
+                  onClick={() => handleProductChange(prod)}
+                  className={`flex items-center gap-2.5 p-2 rounded-2xl border shrink-0 text-right transition-all ${
+                    isCurrent
+                      ? 'bg-red-950/80 border-red-500 text-white shadow-lg shadow-red-950/50 scale-105'
+                      : 'bg-neutral-900 border-neutral-800 text-neutral-300 hover:border-neutral-700'
+                  }`}
+                >
+                  <img src={prod.image} alt={prod.arabicTitle} className="w-12 h-12 rounded-xl object-cover" />
+                  <div>
+                    <div className="text-xs font-bold line-clamp-1 max-w-[140px]">{prod.title}</div>
+                    <div className="text-[10px] text-amber-400 font-bold">{prod.price.toLocaleString()} ر.س</div>
+                  </div>
+                </button>
+              );
+            })}
           </div>
         )}
 
-        {/* Tab 2: PTZ Lens Remote Swivel Test */}
-        {activeTab === 'ptz' && (
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 py-1">
-            <div className="text-xs text-neutral-300 space-y-1">
-              <div className="font-bold text-neutral-100 flex items-center gap-1.5">
-                <Video className="w-4 h-4 text-cyan-400" />
-                <span>تحكم بعدسة PTZ السفلية المتحركة</span>
+        {/* Tab 2: Dimensions & Rotation */}
+        {activeTab === 'dimensions' && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <div className="flex justify-between text-[11px] text-neutral-400">
+                <span>المقياس الحقيقي (Scale):</span>
+                <span className="text-amber-400 font-mono font-bold">{Math.round(scaleFactor * 100)}% {scaleFactor === 1 ? '(1:1 أبعاد حقيقية)' : ''}</span>
               </div>
-              <p className="text-neutral-400 text-[11px]">
-                اختبر حركة دوران الكاميرا لتغطية كافة زوايا غرفتك أو مدخلك
-              </p>
-            </div>
-
-            {/* Directional PTZ D-Pad Controller */}
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setPtzPan((p) => Math.min(p + 0.3, Math.PI))}
-                className="p-2.5 rounded-xl bg-neutral-900 border border-neutral-800 text-neutral-300 hover:text-cyan-400 active:scale-90 transition-transform"
-                title="تدوير يميناً"
-              >
-                <ArrowRight className="w-4 h-4" />
-              </button>
-
-              <div className="flex flex-col gap-1">
-                <button
-                  onClick={() => setPtzTilt((t) => Math.max(t - 0.2, -0.6))}
-                  className="p-2 rounded-xl bg-neutral-900 border border-neutral-800 text-neutral-300 hover:text-cyan-400 active:scale-90 transition-transform"
-                  title="إمالة لأعلى"
-                >
-                  <ArrowUp className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => setPtzTilt((t) => Math.min(t + 0.2, 0.6))}
-                  className="p-2 rounded-xl bg-neutral-900 border border-neutral-800 text-neutral-300 hover:text-cyan-400 active:scale-90 transition-transform"
-                  title="إمالة لأسفل"
-                >
-                  <ArrowDown className="w-4 h-4" />
-                </button>
-              </div>
-
-              <button
-                onClick={() => setPtzPan((p) => Math.max(p - 0.3, -Math.PI))}
-                className="p-2.5 rounded-xl bg-neutral-900 border border-neutral-800 text-neutral-300 hover:text-cyan-400 active:scale-90 transition-transform"
-                title="تدوير يساراً"
-              >
-                <ArrowLeft className="w-4 h-4" />
-              </button>
-
-              <button
-                onClick={() => {
-                  setPtzPan(0);
-                  setPtzTilt(0);
-                }}
-                className="px-3 py-2 rounded-xl bg-neutral-900 border border-neutral-800 text-[11px] font-bold text-neutral-400 hover:text-cyan-400"
-              >
-                إعادة ضبط
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Tab 3: Material Finish Display */}
-        {activeTab === 'presets' && (
-          <div className="flex items-center gap-2 overflow-x-auto pb-1">
-            <div className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-neutral-800 border border-cyan-400 text-cyan-300 ring-2 ring-cyan-500/20 text-xs font-bold">
-              <div
-                className="w-4 h-4 rounded-full border border-neutral-600 shadow-inner"
-                style={{ backgroundColor: config.material.bodyColor }}
+              <input
+                type="range"
+                min="0.5"
+                max="1.5"
+                step="0.05"
+                value={scaleFactor}
+                onChange={(e) => setScaleFactor(parseFloat(e.target.value))}
+                className="w-full h-1.5 bg-neutral-800 rounded-lg appearance-none cursor-pointer accent-red-500"
               />
-              <span>{config.material.name} (اللون الرسمي المعتمد)</span>
             </div>
+
+            <div className="space-y-1">
+              <div className="flex justify-between text-[11px] text-neutral-400">
+                <span>تدوير زاوية المنتج:</span>
+                <span className="text-amber-400 font-mono font-bold">
+                  {Math.round((rotationY * 180) / Math.PI)}°
+                </span>
+              </div>
+              <input
+                type="range"
+                min={-Math.PI}
+                max={Math.PI}
+                step="0.05"
+                value={rotationY}
+                onChange={(e) => setRotationY(parseFloat(e.target.value))}
+                className="w-full h-1.5 bg-neutral-800 rounded-lg appearance-none cursor-pointer accent-red-500"
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Tab 3: Colors */}
+        {activeTab === 'colors' && (
+          <div className="flex items-center gap-2 overflow-x-auto pb-1">
+            {selectedProduct.colors.map((c) => (
+              <button
+                key={c.id}
+                onClick={() => {
+                  soundFx.playFabricSwatch();
+                  onConfigChange({
+                    material: {
+                      ...config.material,
+                      bodyColor: c.hex,
+                      name: c.name,
+                    },
+                  });
+                }}
+                className="flex items-center gap-2 px-3 py-1.5 rounded-xl border bg-neutral-900 border-neutral-800 text-neutral-300 hover:border-red-400 text-xs font-bold shrink-0 transition-all"
+              >
+                <div className="w-3.5 h-3.5 rounded-full border border-neutral-600" style={{ backgroundColor: c.hex }} />
+                <span>{c.name}</span>
+              </button>
+            ))}
           </div>
         )}
 
       </div>
 
-      {/* 5. Help / Instructions Modal */}
+      {/* Help Modal */}
       {showHelpModal && (
         <div className="absolute inset-0 z-40 bg-neutral-950/80 backdrop-blur-xl flex items-center justify-center p-4">
           <div className="max-w-md w-full rounded-3xl bg-neutral-900 border border-neutral-800 p-6 space-y-4 shadow-2xl">
             <div className="flex items-center justify-between">
               <h4 className="text-base font-extrabold text-neutral-100 flex items-center gap-2">
-                <HelpCircle className="w-5 h-5 text-cyan-400" />
-                <span>كيفية استخدام الواقع المعزز AR</span>
+                <HelpCircle className="w-5 h-5 text-red-500" />
+                <span>طريقة تجربة منتجات ديموس بالواقع المعزز AR</span>
               </h4>
               <button
                 onClick={() => setShowHelpModal(false)}
@@ -937,26 +899,26 @@ export const ARRoomViewer: React.FC<ARRoomViewerProps> = ({
 
             <div className="space-y-3 text-xs text-neutral-300 leading-relaxed">
               <div className="p-3 rounded-2xl bg-neutral-950 border border-neutral-800 space-y-1">
-                <strong className="text-cyan-300 block">1. التوجيه نحو الجدار أو المدخل</strong>
-                <p>وجّه كاميرا هاتفك نحو الجدار أو السطح الذي تود مراقبته لتظهر الكاميرا في مكانها الافتراضي.</p>
+                <strong className="text-red-400 block">1. توجيه الكاميرا نحو أرضية الصالة أو المجلس</strong>
+                <p>وجّه كاميرا هاتفك نحو الأرضية لتظهر القطعة بالأبعاد الواقعية 1:1 بالسنتيمتر.</p>
               </div>
 
               <div className="p-3 rounded-2xl bg-neutral-950 border border-neutral-800 space-y-1">
-                <strong className="text-cyan-300 block">2. التحريك وتغيير الحجم</strong>
-                <p>اسحب بإصبع واحد لتحريك الكاميرا، واستخدم إصبعين للتكبير والتصغير وتدوير زاوية اللوح الشمسي.</p>
+                <strong className="text-red-400 block">2. التحريك والتنسيق الدقيق</strong>
+                <p>اسحب بإصبعك لتحديد المكان المناسب في الصالة وتدوير الزاوية نحو التلفزيون أو المدخل.</p>
               </div>
 
               <div className="p-3 rounded-2xl bg-neutral-950 border border-neutral-800 space-y-1">
-                <strong className="text-cyan-300 block">3. التقاط صورة وحفظها</strong>
-                <p>اضغط على زر الكاميرا الأزرق لالتقاط صورة عالية الدقة لمشاركتها ومعاينة شكل الكاميرا في منزلك.</p>
+                <strong className="text-red-400 block">3. التقاط صورة وحفظها</strong>
+                <p>اضغط على زر الكاميرا لالتقاط صورة ومشاركتها مع العائلة أو مهندس الديكور عبر الواتساب.</p>
               </div>
             </div>
 
             <button
               onClick={() => setShowHelpModal(false)}
-              className="w-full py-2.5 rounded-xl bg-cyan-500 text-neutral-950 font-bold text-xs"
+              className="w-full py-2.5 rounded-xl bg-red-600 text-white font-bold text-xs"
             >
-              فهمت، متابعة المعاينة
+              فهمت، متابعة التجربة
             </button>
           </div>
         </div>

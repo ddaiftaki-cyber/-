@@ -4,17 +4,22 @@
  */
 
 import React, { useState } from 'react';
-import { ProductConfig, HotspotAnnotation, PricingPlan } from './types';
+import { ProductConfig, HotspotAnnotation, PricingPlan, DimosProduct } from './types';
 import { MATERIAL_PRESETS, PRICING_PLANS } from './data/productData';
+import { OFFICIAL_DIMOS_PRODUCTS } from './data/dimosStoreData';
+import { DimosTopHeaderBanner } from './components/DimosTopHeaderBanner';
 import { Navbar } from './components/Navbar';
 import { HeroSection } from './components/HeroSection';
-import { LiveCameraStudio } from './components/LiveCameraStudio';
+import { DimosStoreCatalog } from './components/DimosStoreCatalog';
+import { LiveShowroomStudio } from './components/LiveShowroomStudio';
 import { SpatialFeatureMatrix } from './components/SpatialFeatureMatrix';
 import { ExplodedInspector } from './components/ExplodedInspector';
 import { CustomizerStudio } from './components/CustomizerStudio';
 import { InteractiveBenchmarks } from './components/InteractiveBenchmarks';
 import { TechSpecsSheet } from './components/TechSpecsSheet';
 import { PricingTiers } from './components/PricingTiers';
+import { DimosSupportAndFAQ } from './components/DimosSupportAndFAQ';
+import { DimosLiveChat } from './components/DimosLiveChat';
 import { Footer } from './components/Footer';
 import { ReservationModal } from './components/ReservationModal';
 import { ARRoomViewer } from './components/ARRoomViewer';
@@ -35,7 +40,7 @@ export default function App() {
     activeHotspotId: null,
     cameraPreset: 'front',
     performanceMode: 'ultra',
-    engravingText: 'V380-SOLAR-4G',
+    engravingText: 'DIMOSS-KSA',
     ptzPanAngle: 0,
     ptzTiltAngle: 0,
     alarmActive: false,
@@ -48,9 +53,11 @@ export default function App() {
   // Reservation Modal state
   const [isReservationOpen, setIsReservationOpen] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<PricingPlan>(PRICING_PLANS[1]); // Studio Pro default
+  const [activeReservationProduct, setActiveReservationProduct] = useState<DimosProduct | null>(null);
 
   // AR Room View Modal State
   const [isAROpen, setIsAROpen] = useState(false);
+  const [activeARProduct, setActiveARProduct] = useState<DimosProduct | null>(OFFICIAL_DIMOS_PRODUCTS[0]);
 
   // Interactive Onboarding Tour State
   const [isTourOpen, setIsTourOpen] = useState(() => {
@@ -69,12 +76,30 @@ export default function App() {
   const handleOpenReservation = (plan?: PricingPlan) => {
     if (plan) {
       setSelectedPlan(plan);
+      setActiveReservationProduct(null);
     }
     setIsReservationOpen(true);
   };
 
+  const handleOpenReservationWithProduct = (product: DimosProduct) => {
+    setActiveReservationProduct(product);
+    setIsReservationOpen(true);
+  };
+
   const handleOpenAR = () => {
+    if (!activeARProduct) {
+      setActiveARProduct(OFFICIAL_DIMOS_PRODUCTS[0]);
+    }
     setIsAROpen(true);
+  };
+
+  const handleOpenARWithProduct = (product: DimosProduct) => {
+    setActiveARProduct(product);
+    setIsAROpen(true);
+  };
+
+  const handleOpenCustomizerWithProduct = (product: DimosProduct) => {
+    handleScrollToCustomizer();
   };
 
   const handleOpenTour = () => {
@@ -89,7 +114,7 @@ export default function App() {
   };
 
   return (
-    <div className={`min-h-screen bg-neutral-950 text-neutral-100 selection:bg-cyan-500/30 selection:text-cyan-200 overflow-x-hidden font-sans relative transition-all duration-500 ${
+    <div className={`min-h-screen bg-neutral-950 text-neutral-100 selection:bg-red-500/30 selection:text-red-200 overflow-x-hidden font-sans relative transition-all duration-500 ${
       config.ecoMode ? 'eco-mode-active' : ''
     }`}>
       
@@ -110,6 +135,11 @@ export default function App() {
         </div>
       )}
       
+      {/* Top Banner with Free Shipping, Promo Codes & Flash Sale */}
+      <DimosTopHeaderBanner
+        onOpenCart={() => handleOpenReservation(selectedPlan)}
+      />
+
       {/* Sleek Glassmorphism Navigation Bar */}
       <Navbar
         config={config}
@@ -129,8 +159,15 @@ export default function App() {
         onOpenTour={handleOpenTour}
       />
 
-      {/* Live Camera Stream & Interactive 360 PTZ Remote Controller Studio */}
-      <LiveCameraStudio
+      {/* Official Dimos Store & Categories Catalog with AR Launchers */}
+      <DimosStoreCatalog
+        onOpenARWithProduct={handleOpenARWithProduct}
+        onOpenCustomizerWithProduct={handleOpenCustomizerWithProduct}
+        onOpenReservationWithProduct={handleOpenReservationWithProduct}
+      />
+
+      {/* Live Luxury Showroom Studio & Lighting / Eco Power Dashboard */}
+      <LiveShowroomStudio
         config={config}
         onConfigChange={handleConfigChange}
         onOpenReservation={() => handleOpenReservation(selectedPlan)}
@@ -171,8 +208,17 @@ export default function App() {
         onSelectPlan={(plan) => handleOpenReservation(plan)}
       />
 
+      {/* Official Dimos FAQ, Reviews, B2B Wholesale & Guarantees */}
+      <DimosSupportAndFAQ
+        onOpenReservation={() => handleOpenReservation(selectedPlan)}
+        onOpenAR={handleOpenAR}
+      />
+
       {/* FAQ & Footer with Telemetry */}
       <Footer />
+
+      {/* Live Chat Floating Assistant with Zaid */}
+      <DimosLiveChat />
 
       {/* Pre-order Reservation Modal with Confetti */}
       <ReservationModal
@@ -180,6 +226,7 @@ export default function App() {
         onClose={() => setIsReservationOpen(false)}
         plan={selectedPlan}
         config={config}
+        customProduct={activeReservationProduct}
       />
 
       {/* AR / WebXR Room Viewer Modal */}
@@ -190,8 +237,14 @@ export default function App() {
         onConfigChange={handleConfigChange}
         onOpenReservation={() => {
           setIsAROpen(false);
-          handleOpenReservation(selectedPlan);
+          if (activeARProduct) {
+            handleOpenReservationWithProduct(activeARProduct);
+          } else {
+            handleOpenReservation(selectedPlan);
+          }
         }}
+        activeProduct={activeARProduct}
+        onSelectProduct={(p) => setActiveARProduct(p)}
       />
 
       {/* Interactive Onboarding Tour Modal */}

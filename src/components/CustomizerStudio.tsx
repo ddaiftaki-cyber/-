@@ -1,8 +1,27 @@
 import React, { useState } from 'react';
-import { ProductConfig, MaterialConfig, LightingPreset } from '../types';
-import { MATERIAL_PRESETS, CORE_GLOW_OPTIONS, LIGHTING_PRESETS } from '../data/productData';
+import { ProductConfig, MaterialConfig, LightingPreset, WoodFinish, MetalAccent, MarbleType } from '../types';
+import {
+  MATERIAL_PRESETS,
+  WOOD_FINISH_OPTIONS,
+  METAL_ACCENT_OPTIONS,
+  MARBLE_FINISH_OPTIONS,
+} from '../data/productData';
 import { soundFx } from '../utils/audio';
-import { Palette, Sun, Zap, Camera, Sparkles, Check, Sliders, Shield, Cpu, RefreshCw, ShoppingBag, BellRing, Leaf, ZapOff } from 'lucide-react';
+import {
+  Palette,
+  Sun,
+  Sparkles,
+  Check,
+  Sliders,
+  Award,
+  ShoppingBag,
+  Layers,
+  Crown,
+  Trees,
+  Gem,
+  CheckCircle2,
+  Camera,
+} from 'lucide-react';
 
 interface CustomizerStudioProps {
   config: ProductConfig;
@@ -12,6 +31,14 @@ interface CustomizerStudioProps {
   onOpenTour?: () => void;
 }
 
+const LIGHTING_SALON_PRESETS: { id: LightingPreset; name: string; desc: string }[] = [
+  { id: 'warm_majlis', name: 'مجلس سعودي دافئ وفاخر', desc: 'إضاءة ثريات ذهبية ملكية تبرز لمعان المخمل والذهب المطفي' },
+  { id: 'daylight_salon', name: 'صالة نهارية مشرقة', desc: 'ضوء نهاري طبيعي يبرز تفاصيل قماش البوكليه وألياف الخشب' },
+  { id: 'sunset_luxury', name: 'أجواء غروب الرياض الذهبي', desc: 'درجات عنبرية دافئة تمنح المكان فخامة استثنائية' },
+  { id: 'evening_mood', name: 'أجواء ليلية هادئة مع إضاءة الأباجورة', desc: 'إضاءة محيطية ساحرة للراحة والاسترخاء العائلي' },
+  { id: 'emerald_palace', name: 'أجواء القصور الملكية', desc: 'إضاءة زمردية وذهبية خاصة بالمناسبات والضيافة الكبرى' },
+];
+
 export const CustomizerStudio: React.FC<CustomizerStudioProps> = ({
   config,
   onConfigChange,
@@ -19,16 +46,24 @@ export const CustomizerStudio: React.FC<CustomizerStudioProps> = ({
   onOpenAR,
   onOpenTour,
 }) => {
-  const [copiedNotification, setCopiedNotification] = useState(false);
-
   const handleSelectMaterial = (mat: MaterialConfig) => {
-    soundFx.playClick();
+    soundFx.playFabricSwatch();
     onConfigChange({ material: mat });
   };
 
-  const handleSelectGlow = (hex: string) => {
+  const handleSelectWood = (wood: WoodFinish) => {
     soundFx.playClick();
-    onConfigChange({ coreGlowColor: hex });
+    onConfigChange({ woodFinish: wood });
+  };
+
+  const handleSelectMetal = (metal: MetalAccent) => {
+    soundFx.playClick();
+    onConfigChange({ metalAccent: metal });
+  };
+
+  const handleSelectMarble = (marble: MarbleType) => {
+    soundFx.playClick();
+    onConfigChange({ marbleFinish: marble });
   };
 
   const handleSelectLighting = (preset: LightingPreset) => {
@@ -36,26 +71,20 @@ export const CustomizerStudio: React.FC<CustomizerStudioProps> = ({
     onConfigChange({ lightingPreset: preset });
   };
 
-  const handleShareConfig = () => {
-    soundFx.playSuccess();
-    setCopiedNotification(true);
-    setTimeout(() => setCopiedNotification(false), 2500);
-  };
-
   return (
     <section id="customizer" className="py-20 relative overflow-hidden text-right">
-      {/* Background Glows */}
-      <div className="absolute top-1/3 left-0 w-[500px] h-[500px] bg-purple-900/10 rounded-full blur-[140px] pointer-events-none" />
-      <div className="absolute bottom-10 right-10 w-[400px] h-[400px] bg-cyan-900/10 rounded-full blur-[120px] pointer-events-none" />
+      {/* Ambient Glows */}
+      <div className="absolute top-1/3 left-0 w-[500px] h-[500px] bg-amber-900/10 rounded-full blur-[140px] pointer-events-none" />
+      <div className="absolute bottom-10 right-10 w-[400px] h-[400px] bg-yellow-900/10 rounded-full blur-[120px] pointer-events-none" />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Section Header */}
         <div className="text-center max-w-3xl mx-auto mb-14 space-y-3">
           <div className="flex items-center justify-center gap-2 flex-wrap">
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-cyan-950/60 border border-cyan-800/60 text-xs font-bold text-cyan-400 tracking-wider">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-amber-950/70 border border-amber-500/40 text-xs font-black text-amber-400 tracking-wider">
               <Sliders className="w-3.5 h-3.5" />
-              <span>استوديو تخصيص الكاميرا 3D</span>
+              <span>استوديو التخصيص ثلاثي الأبعاد 3D</span>
             </div>
 
             {onOpenTour && (
@@ -64,18 +93,18 @@ export const CustomizerStudio: React.FC<CustomizerStudioProps> = ({
                   soundFx.playClick();
                   onOpenTour();
                 }}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-neutral-900 hover:bg-neutral-800 border border-cyan-500/40 text-xs font-bold text-cyan-300 transition-colors shadow-sm"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-neutral-900 hover:bg-neutral-800 border border-amber-500/30 text-xs font-bold text-amber-300 transition-colors"
               >
-                <Sparkles className="w-3.5 h-3.5 text-cyan-400 animate-pulse" />
-                <span>كيف يعمل استوديو التخصيص؟</span>
+                <Sparkles className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
+                <span>كيف تخصص أثاثك لمجلسك؟</span>
               </button>
             )}
           </div>
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-neutral-100 tracking-tight">
-            اختر اللون والإضاءة المناسبة لموقعك
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-neutral-100 tracking-tight">
+            خصّص أقمشة، أخشاب، ورخام مجلسك بحرية تامة
           </h2>
           <p className="text-neutral-300 text-sm sm:text-base max-w-2xl mx-auto leading-relaxed">
-            شاهد تأثير الألوان المختلفة وكشافات الإضاءة الليلية وأنماط الإنذار مباشرة في نافذة العرض ثلاثية الأبعاد.
+            اختر تشكيلة الأقمشة الإيطالية المقاومة للبقع، خشب الزان والجوز الطبيعي، ونوع الرخام والمعادن وشاهد النتيجة فوراً في المجسم ثلاثي الأبعاد.
           </p>
         </div>
 
@@ -85,106 +114,173 @@ export const CustomizerStudio: React.FC<CustomizerStudioProps> = ({
           {/* Right Panel (in RTL): Controls */}
           <div className="lg:col-span-7 space-y-6">
             
-            {/* Step 1: Chassis Materials & Colors */}
-            <div className="p-6 rounded-3xl bg-neutral-900/70 border border-neutral-800/80 backdrop-blur-xl space-y-4">
+            {/* Step 1: Luxury Fabrics & Leathers */}
+            <div className="p-6 rounded-3xl bg-neutral-900/70 border border-neutral-800 backdrop-blur-xl space-y-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 text-sm font-bold text-neutral-200">
-                  <Palette className="w-4 h-4 text-cyan-400" />
-                  <span>1. لون الهيكل الخارجي المعتمد</span>
+                  <Palette className="w-4 h-4 text-amber-400" />
+                  <span>1. نوع ولون القماش الإيطالي الفاخر (معالج بالنانو)</span>
                 </div>
-                <span className="text-xs text-cyan-400 font-bold">
+                <span className="text-xs text-amber-400 font-bold">
                   {config.material.name}
                 </span>
               </div>
 
-              <div className="p-4 rounded-2xl bg-neutral-950/80 border border-cyan-500/40 space-y-3">
-                <div className="flex items-center gap-3">
-                  <div
-                    className="w-10 h-10 rounded-2xl border-2 border-cyan-400 shadow-lg shadow-cyan-500/30 flex items-center justify-center shrink-0"
-                    style={{ backgroundColor: config.material.bodyColor }}
-                  >
-                    <Check className="w-5 h-5 text-cyan-300 stroke-[3]" />
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-extrabold text-neutral-100 flex items-center gap-2">
-                      <span>رمادي تيتانيوم صناعي</span>
-                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-cyan-950 text-cyan-300 border border-cyan-500/30 font-bold">
-                        اللون الحصري
-                      </span>
-                    </h4>
-                    <p className="text-xs text-neutral-400 mt-0.5">
-                      طلاء تيتانيوم عالي الكثافة مقاوم للصدأ، أشعة الشمس الحارقة، والغبار الصحراوي بمعيار IP66.
-                    </p>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-3 gap-2 pt-1 border-t border-neutral-800/80 text-[11px] text-neutral-300 text-center font-mono">
-                  <div className="p-2 rounded-xl bg-neutral-900/60 border border-neutral-800">
-                    <span className="text-neutral-400 block text-[10px]">المتانة</span>
-                    <span className="text-cyan-400 font-bold">IP66 عسكري</span>
-                  </div>
-                  <div className="p-2 rounded-xl bg-neutral-900/60 border border-neutral-800">
-                    <span className="text-neutral-400 block text-[10px]">اللمعان</span>
-                    <span className="text-neutral-200 font-bold">مات صناعي</span>
-                  </div>
-                  <div className="p-2 rounded-xl bg-neutral-900/60 border border-neutral-800">
-                    <span className="text-neutral-400 block text-[10px]">مقاومة الحرارة</span>
-                    <span className="text-amber-400 font-bold">-30°C إلى +65°C</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Step 2: Floodlight & Alarm Strobe Colors */}
-            <div className="p-6 rounded-3xl bg-neutral-900/70 border border-neutral-800/80 backdrop-blur-xl space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-sm font-bold text-neutral-200">
-                  <Zap className="w-4 h-4 text-cyan-400" />
-                  <span>2. وضع الكشافات ومؤشرات الإنذار</span>
-                </div>
-                <span className="text-xs text-neutral-400">
-                  كشافات LED ليلية وأشعة IR
-                </span>
-              </div>
-
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-                {CORE_GLOW_OPTIONS.map((glow) => {
-                  const isSelected = config.coreGlowColor === glow.hex;
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {MATERIAL_PRESETS.map((mat) => {
+                  const isSelected = config.material.id === mat.id;
                   return (
                     <button
-                      key={glow.id}
-                      onClick={() => handleSelectGlow(glow.hex)}
-                      className={`p-2.5 rounded-xl border text-right transition-all flex items-center gap-2.5 ${
+                      key={mat.id}
+                      onClick={() => handleSelectMaterial(mat)}
+                      className={`p-3.5 rounded-2xl border text-right transition-all flex items-start gap-3 ${
                         isSelected
-                          ? 'bg-neutral-800 border-cyan-400 ring-2 ring-cyan-500/20'
-                          : 'bg-neutral-950/60 border-neutral-800 hover:border-neutral-700'
+                          ? 'bg-neutral-800 border-amber-400 ring-2 ring-amber-500/30 shadow-lg shadow-amber-950/40'
+                          : 'bg-neutral-950/70 border-neutral-800 hover:border-neutral-700 hover:bg-neutral-900/50'
                       }`}
                     >
                       <div
-                        className="w-4 h-4 rounded-full shadow-lg"
-                        style={{ backgroundColor: glow.hex, boxShadow: `0 0 10px ${glow.hex}80` }}
-                      />
-                      <span className="text-xs text-neutral-200 font-medium">{glow.label}</span>
+                        className="w-9 h-9 rounded-xl border-2 border-amber-500/50 shadow-md shrink-0 mt-0.5 flex items-center justify-center"
+                        style={{ backgroundColor: mat.bodyColor }}
+                      >
+                        {isSelected && <Check className="w-4 h-4 text-amber-400 stroke-[3]" />}
+                      </div>
+                      <div className="space-y-1">
+                        <div className="text-xs font-bold text-neutral-100">{mat.name}</div>
+                        <div className="text-[11px] text-neutral-400 leading-snug line-clamp-2">{mat.finish}</div>
+                        <div className="text-[10px] text-amber-300/90 font-mono font-semibold">{mat.durabilityRubCycles}</div>
+                      </div>
                     </button>
                   );
                 })}
               </div>
             </div>
 
-            {/* Step 3: Simulation Environment Lighting */}
-            <div className="p-6 rounded-3xl bg-neutral-900/70 border border-neutral-800/80 backdrop-blur-xl space-y-4">
+            {/* Step 2: Solid Natural Wood Base Finish */}
+            <div className="p-6 rounded-3xl bg-neutral-900/70 border border-neutral-800 backdrop-blur-xl space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-sm font-bold text-neutral-200">
+                  <Trees className="w-4 h-4 text-amber-400" />
+                  <span>2. تشطيب ونوع خشب الهيكل المصمت</span>
+                </div>
+                <span className="text-xs text-amber-400 font-bold">
+                  {WOOD_FINISH_OPTIONS.find((w) => w.id === config.woodFinish)?.name}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                {WOOD_FINISH_OPTIONS.map((wood) => {
+                  const isSelected = config.woodFinish === wood.id;
+                  return (
+                    <button
+                      key={wood.id}
+                      onClick={() => handleSelectWood(wood.id)}
+                      className={`p-3 rounded-2xl border text-right transition-all flex flex-col justify-between ${
+                        isSelected
+                          ? 'bg-neutral-800 border-amber-400 ring-2 ring-amber-500/20'
+                          : 'bg-neutral-950/70 border-neutral-800 hover:border-neutral-700'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="w-4 h-4 rounded-full border border-white/20" style={{ backgroundColor: wood.color }} />
+                        <span className="text-xs font-bold text-neutral-200 truncate">{wood.name}</span>
+                      </div>
+                      <span className="text-[10px] text-neutral-400">{wood.desc}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Step 3: Italian Marble & Metal Accent */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              
+              {/* Marble */}
+              <div className="p-5 rounded-3xl bg-neutral-900/70 border border-neutral-800 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-neutral-200">
+                    <Gem className="w-3.5 h-3.5 text-amber-400" />
+                    <span>رخام طاولة القهوة</span>
+                  </div>
+                  <span className="text-[11px] text-amber-400 font-bold">
+                    {MARBLE_FINISH_OPTIONS.find((m) => m.id === config.marbleFinish)?.name}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  {MARBLE_FINISH_OPTIONS.map((marble) => {
+                    const isSelected = config.marbleFinish === marble.id;
+                    return (
+                      <button
+                        key={marble.id}
+                        onClick={() => handleSelectMarble(marble.id)}
+                        className={`p-2.5 rounded-xl border text-right text-xs transition-all ${
+                          isSelected
+                            ? 'bg-neutral-800 border-amber-400 text-amber-300 font-bold'
+                            : 'bg-neutral-950/60 border-neutral-800 text-neutral-300'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-3 rounded-full border" style={{ backgroundColor: marble.color }} />
+                          <span className="truncate">{marble.name}</span>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Metal PVD */}
+              <div className="p-5 rounded-3xl bg-neutral-900/70 border border-neutral-800 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-neutral-200">
+                    <Crown className="w-3.5 h-3.5 text-amber-400" />
+                    <span>أرجل وإطارات التيتانيوم</span>
+                  </div>
+                  <span className="text-[11px] text-amber-400 font-bold">
+                    {METAL_ACCENT_OPTIONS.find((m) => m.id === config.metalAccent)?.name}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  {METAL_ACCENT_OPTIONS.map((metal) => {
+                    const isSelected = config.metalAccent === metal.id;
+                    return (
+                      <button
+                        key={metal.id}
+                        onClick={() => handleSelectMetal(metal.id)}
+                        className={`p-2.5 rounded-xl border text-right text-xs transition-all ${
+                          isSelected
+                            ? 'bg-neutral-800 border-amber-400 text-amber-300 font-bold'
+                            : 'bg-neutral-950/60 border-neutral-800 text-neutral-300'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-3 rounded-full border" style={{ backgroundColor: metal.color }} />
+                          <span className="truncate">{metal.name}</span>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+            </div>
+
+            {/* Step 4: Salon Environment Lighting Presets */}
+            <div className="p-6 rounded-3xl bg-neutral-900/70 border border-neutral-800 backdrop-blur-xl space-y-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 text-sm font-bold text-neutral-200">
                   <Sun className="w-4 h-4 text-amber-400" />
-                  <span>3. محاكاة بيئة المراقبة والطقس</span>
+                  <span>3. محاكاة إضاءة الصالة والمجلس السعودي</span>
                 </div>
                 <span className="text-xs text-amber-400 font-bold">
-                  {LIGHTING_PRESETS.find((p) => p.id === config.lightingPreset)?.name}
+                  {LIGHTING_SALON_PRESETS.find((p) => p.id === config.lightingPreset)?.name}
                 </span>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                {LIGHTING_PRESETS.map((preset) => {
+                {LIGHTING_SALON_PRESETS.map((preset) => {
                   const isSelected = config.lightingPreset === preset.id;
                   return (
                     <button
@@ -207,140 +303,55 @@ export const CustomizerStudio: React.FC<CustomizerStudioProps> = ({
               </div>
             </div>
 
-            {/* Step 4: Eco-Mode & Performance Optimization */}
-            <div className={`p-6 rounded-3xl border backdrop-blur-xl space-y-4 transition-all ${
-              config.ecoMode
-                ? 'bg-emerald-950/40 border-emerald-500/60'
-                : 'bg-neutral-900/70 border-neutral-800/80'
-            }`}>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-sm font-bold text-neutral-200">
-                  <Leaf className={`w-4 h-4 ${config.ecoMode ? 'text-emerald-400' : 'text-neutral-400'}`} />
-                  <span>4. وضع توفير الطاقة والأداء (Eco-Mode)</span>
-                </div>
-                <button
-                  onClick={() => {
-                    soundFx.playClick();
-                    const next = !config.ecoMode;
-                    onConfigChange({
-                      ecoMode: next,
-                      performanceMode: next ? 'eco' : 'balanced',
-                    });
-                    if (next) soundFx.playBeep();
-                  }}
-                  className={`px-3 py-1 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 ${
-                    config.ecoMode
-                      ? 'bg-emerald-500 text-neutral-950 shadow-md shadow-emerald-500/30'
-                      : 'bg-neutral-800 text-neutral-300 hover:bg-neutral-700'
-                  }`}
-                >
-                  <Leaf className="w-3.5 h-3.5" />
-                  <span>{config.ecoMode ? 'Eco مفعّل 🌱' : 'تفعيل Eco'}</span>
-                </button>
-              </div>
-
-              <p className="text-xs text-neutral-300 leading-relaxed">
-                يقوم وضع توفير الطاقة بتقليل سطوع الإضاءة المحيطة، خفض حمل معالجة 3D GPU، وإيقاف التحديثات المستمرة لتسريع التصفح على الهواتف والأجهزة ذات الموارد المحدودة.
-              </p>
-
-              {/* Performance selector */}
-              <div className="grid grid-cols-3 gap-2 pt-1">
-                <button
-                  onClick={() => {
-                    soundFx.playClick();
-                    onConfigChange({ ecoMode: true, performanceMode: 'eco' });
-                  }}
-                  className={`p-2.5 rounded-2xl border text-center transition-all flex flex-col items-center gap-1 ${
-                    config.performanceMode === 'eco'
-                      ? 'bg-emerald-950/80 border-emerald-500 text-emerald-300 ring-2 ring-emerald-500/20'
-                      : 'bg-neutral-950/60 border-neutral-800 text-neutral-400 hover:bg-neutral-800'
-                  }`}
-                >
-                  <span className="text-xs font-bold">توفير Eco</span>
-                  <span className="text-[10px] text-neutral-400">خفيف وسريع</span>
-                </button>
-
-                <button
-                  onClick={() => {
-                    soundFx.playClick();
-                    onConfigChange({ ecoMode: false, performanceMode: 'balanced' });
-                  }}
-                  className={`p-2.5 rounded-2xl border text-center transition-all flex flex-col items-center gap-1 ${
-                    config.performanceMode === 'balanced'
-                      ? 'bg-cyan-950/80 border-cyan-500 text-cyan-300 ring-2 ring-cyan-500/20'
-                      : 'bg-neutral-950/60 border-neutral-800 text-neutral-400 hover:bg-neutral-800'
-                  }`}
-                >
-                  <span className="text-xs font-bold">متوازن</span>
-                  <span className="text-[10px] text-neutral-400">أداء قياسي</span>
-                </button>
-
-                <button
-                  onClick={() => {
-                    soundFx.playClick();
-                    onConfigChange({ ecoMode: false, performanceMode: 'ultra' });
-                  }}
-                  className={`p-2.5 rounded-2xl border text-center transition-all flex flex-col items-center gap-1 ${
-                    config.performanceMode === 'ultra'
-                      ? 'bg-purple-950/80 border-purple-500 text-purple-300 ring-2 ring-purple-500/20'
-                      : 'bg-neutral-950/60 border-neutral-800 text-neutral-400 hover:bg-neutral-800'
-                  }`}
-                >
-                  <span className="text-xs font-bold">أقصى دقة Ultra</span>
-                  <span className="text-[10px] text-neutral-400">توهج 4K كامل</span>
-                </button>
-              </div>
-            </div>
-
           </div>
 
-          {/* Left Panel (in RTL): Camera Specs Summary Card & Direct Checkout */}
-          <div className="lg:col-span-5 p-7 rounded-3xl bg-neutral-900/80 border border-neutral-800/80 backdrop-blur-xl flex flex-col justify-between shadow-2xl relative overflow-hidden">
+          {/* Left Panel (in RTL): Summary Card & Saudi Checkout */}
+          <div className="lg:col-span-5 p-7 rounded-3xl bg-neutral-900/80 border border-amber-500/30 backdrop-blur-xl flex flex-col justify-between shadow-2xl relative overflow-hidden">
             {/* Ambient Corner Flare */}
-            <div className="absolute top-0 left-0 w-64 h-64 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute top-0 left-0 w-64 h-64 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
 
             <div className="space-y-6 relative z-10">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-cyan-400 bg-cyan-950/80 px-3 py-1 rounded-full border border-cyan-800/60">
-                  ملخص مواصفات الكاميرا المختارة
+                <span className="text-xs font-black text-amber-400 bg-amber-950/80 px-3 py-1 rounded-full border border-amber-500/40">
+                  ملخص مواصفات طلبك المخصص
                 </span>
-                <span className="text-xs font-mono text-neutral-400">V380-SOLAR-4G</span>
+                <span className="text-xs font-mono text-neutral-400">DIMOSS-SOVEREIGN-KSA</span>
               </div>
 
               <div className="space-y-2">
-                <h3 className="text-2xl font-extrabold text-neutral-100">
-                  كاميرا V380 Pro المزدوجة
+                <h3 className="text-2xl font-black text-neutral-100">
+                  كنب ديموس الملكي المودولار
                 </h3>
                 <p className="text-xs text-neutral-300 leading-relaxed">
-                  هيكل مخصص بلون <strong className="text-cyan-400">{config.material.name}</strong>، مزودة بلوح طاقة شمسية مدمج، عدسة مزدوجة، بطارية ليثيوم 20,000mAh، ودعم شريحة 4G.
+                  قماش مخصص <strong className="text-amber-400">{config.material.name}</strong>، قاعدة خشب <strong className="text-amber-300">{WOOD_FINISH_OPTIONS.find((w) => w.id === config.woodFinish)?.name}</strong> مع أرجل <strong className="text-yellow-200">{METAL_ACCENT_OPTIONS.find((m) => m.id === config.metalAccent)?.name}</strong>.
                 </p>
               </div>
 
               {/* Specs Summary Checklist */}
-              <div className="space-y-3 pt-2 border-t border-neutral-800/80">
+              <div className="space-y-3 pt-2 border-t border-neutral-800">
                 <div className="flex items-center justify-between text-xs py-1 border-b border-neutral-800/40">
-                  <span className="text-neutral-400">العدسات</span>
-                  <span className="font-bold text-neutral-200">ثابتة 130° + متحركة 355° PTZ</span>
+                  <span className="text-neutral-400">القماش المعتمد</span>
+                  <span className="font-bold text-neutral-200">{config.material.name}</span>
                 </div>
                 <div className="flex items-center justify-between text-xs py-1 border-b border-neutral-800/40">
-                  <span className="text-neutral-400">مصدر الطاقة</span>
-                  <span className="font-bold text-amber-300">لوح شمسي + بطارية ليثيوم مدمجة</span>
+                  <span className="text-neutral-400">حشوة المقاعد والراحة</span>
+                  <span className="font-bold text-amber-300">اسفنج طبي ميموري فوم HR 45D + ريش</span>
                 </div>
                 <div className="flex items-center justify-between text-xs py-1 border-b border-neutral-800/40">
-                  <span className="text-neutral-400">نوع الاتصال</span>
-                  <span className="font-bold text-cyan-300">شريحة 4G SIM لجميع المشغلين</span>
+                  <span className="text-neutral-400">الهيكل الداخلي</span>
+                  <span className="font-bold text-neutral-200">خشب زان أحمر أوروبي مصمت مجفف</span>
                 </div>
                 <div className="flex items-center justify-between text-xs py-1 border-b border-neutral-800/40">
-                  <span className="text-neutral-400">التطبيق المعتمد</span>
-                  <span className="font-bold text-neutral-200">V380 Pro الرسمي (عربي كامل)</span>
+                  <span className="text-neutral-400">مقاومة البقع والقهوة</span>
+                  <span className="font-bold text-emerald-400">تقنية النانو المقاومة للسوائل 100%</span>
                 </div>
                 <div className="flex items-center justify-between text-xs py-1 border-b border-neutral-800/40">
-                  <span className="text-neutral-400">الرؤية الليلية</span>
-                  <span className="font-bold text-neutral-200">ملونة بالكشافات + أشعة IR خفية</span>
+                  <span className="text-neutral-400">الضمان والتوصيل في المملكة</span>
+                  <span className="font-bold text-amber-400">ضمان ذهبي 10 سنوات + توصيل وتركيب VIP مجاني</span>
                 </div>
                 <div className="flex items-center justify-between text-xs py-1">
-                  <span className="text-neutral-400">الضمان والتوصيل</span>
-                  <span className="font-bold text-emerald-400">ضمان ذهبي سنتين + شحن مجاني 58 ولاية</span>
+                  <span className="text-neutral-400">تقسيط تابي وتمارا</span>
+                  <span className="font-bold text-cyan-400">4 دفعات ميسرة بدون أي فوائد (0%)</span>
                 </div>
               </div>
             </div>
@@ -349,15 +360,14 @@ export const CustomizerStudio: React.FC<CustomizerStudioProps> = ({
             <div className="space-y-3 pt-6 border-t border-neutral-800 relative z-10">
               <div className="flex items-baseline justify-between">
                 <div>
-                  <span className="text-xs text-neutral-400 block">السعر الترويجي الرسمي</span>
+                  <span className="text-xs text-neutral-400 block">السعر الإجمالي شامل الضريبة والتوصيل</span>
                   <div className="flex items-baseline gap-2">
-                    <span className="text-2xl sm:text-3xl font-black text-amber-400 font-sans">36,000 د.ج</span>
-                    <span className="text-xs text-neutral-400 font-bold">(3 ملايين و 600 ألف)</span>
-                    <span className="text-xs text-neutral-500 line-through">48,000 د.ج</span>
+                    <span className="text-2xl sm:text-3xl font-black text-amber-400 font-sans">4,950 ر.س</span>
+                    <span className="text-xs text-cyan-400 font-bold">أو 1,237 ر.س / شهر (4 دفعات)</span>
                   </div>
                 </div>
                 <span className="text-xs font-bold text-emerald-400 bg-emerald-950/80 px-2.5 py-1 rounded-lg border border-emerald-800/60">
-                  وفر 12,000 د.ج
+                  وفر 1,850 ر.س
                 </span>
               </div>
 
@@ -367,10 +377,10 @@ export const CustomizerStudio: React.FC<CustomizerStudioProps> = ({
                     soundFx.playClick();
                     onOpenReservation();
                   }}
-                  className="flex-1 w-full py-3.5 rounded-2xl bg-gradient-to-r from-cyan-500 via-sky-400 to-amber-400 hover:from-cyan-400 hover:to-amber-300 text-neutral-950 font-extrabold text-sm shadow-xl shadow-cyan-500/25 transition-all flex items-center justify-center gap-2 active:scale-[0.98]"
+                  className="flex-1 w-full py-3.5 rounded-2xl bg-gradient-to-r from-amber-500 via-amber-400 to-yellow-300 hover:from-amber-400 hover:to-yellow-200 text-neutral-950 font-black text-sm shadow-xl shadow-amber-500/25 transition-all flex items-center justify-center gap-2 active:scale-[0.98]"
                 >
                   <ShoppingBag className="w-4 h-4" />
-                  <span>اطلب الكاميرا الآن (الدفع عند الاستلام)</span>
+                  <span>اطلب بهذا التفصيل (تابي / تمارا / دفع عند التركيب)</span>
                 </button>
 
                 {onOpenAR && (
@@ -379,10 +389,10 @@ export const CustomizerStudio: React.FC<CustomizerStudioProps> = ({
                       soundFx.playClick();
                       onOpenAR();
                     }}
-                    className="w-full sm:w-auto px-5 py-3.5 rounded-2xl bg-neutral-900 hover:bg-neutral-800 text-cyan-300 font-bold text-xs border border-cyan-500/40 shadow-lg transition-all flex items-center justify-center gap-2"
+                    className="w-full sm:w-auto px-5 py-3.5 rounded-2xl bg-neutral-900 hover:bg-neutral-800 text-amber-300 font-bold text-xs border border-amber-500/40 shadow-lg transition-all flex items-center justify-center gap-2"
                   >
-                    <Camera className="w-4 h-4 text-cyan-400" />
-                    <span>معاينة في غرفتك (AR)</span>
+                    <Camera className="w-4 h-4 text-amber-400" />
+                    <span>معاينة في صالتك (AR)</span>
                   </button>
                 )}
               </div>

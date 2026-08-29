@@ -1,7 +1,21 @@
 import React, { useState } from 'react';
 import { FAQS } from '../data/productData';
 import { soundFx } from '../utils/audio';
-import { ChevronDown, Video, ArrowUp, Send, CheckCircle2, Shield, PhoneCall, ShieldCheck, Sun, Wifi, MessageCircle } from 'lucide-react';
+import { DimossLogo } from './DimossLogo';
+import {
+  ChevronDown,
+  Crown,
+  ArrowUp,
+  Send,
+  CheckCircle2,
+  Shield,
+  PhoneCall,
+  ShieldCheck,
+  CreditCard,
+  Truck,
+  MessageCircle,
+  Sparkles,
+} from 'lucide-react';
 
 export const Footer: React.FC = () => {
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(0);
@@ -35,14 +49,14 @@ export const Footer: React.FC = () => {
       {/* FAQ Section */}
       <div id="faq" className="max-w-4xl mx-auto px-4 sm:px-6 mb-20">
         <div className="text-center mb-12 space-y-2">
-          <span className="text-xs font-bold text-cyan-400 tracking-wider">
-            الأسئلة الشائعة والإجابات
+          <span className="text-xs font-black text-amber-400 tracking-wider">
+            الأسئلة الشائعة والإجابات • ديموس للمفروشات
           </span>
-          <h2 className="text-3xl sm:text-4xl font-extrabold text-neutral-100">
-            كل ما تود معرفته عن الكاميرا
+          <h2 className="text-3xl sm:text-4xl font-black text-neutral-100">
+            كل ما تود معرفته عن مفروشات ديموس والخدمات
           </h2>
           <p className="text-sm text-neutral-400">
-            إجابات دقيقة لأهم الأسئلة حول التثبيت، شريحة 4G، وتطبيق V380 Pro.
+            إجابات واضحة حول خيارات التقسيط (تابي وتمارا)، التوصيل للمناطق، الضمان الذهبي، وخدمة إرسال عينات الأقمشة مجاناً.
           </p>
         </div>
 
@@ -56,12 +70,12 @@ export const Footer: React.FC = () => {
               >
                 <button
                   onClick={() => toggleFaq(idx)}
-                  className="w-full p-5 text-right flex items-center justify-between gap-4 text-sm font-bold text-neutral-200 hover:text-cyan-300 transition-colors"
+                  className="w-full p-5 text-right flex items-center justify-between gap-4 text-sm font-bold text-neutral-200 hover:text-amber-300 transition-colors"
                 >
                   <span>{faq.q}</span>
                   <ChevronDown
                     className={`w-4 h-4 text-neutral-400 shrink-0 transition-transform duration-200 ${
-                      isOpen ? 'rotate-180 text-cyan-400' : ''
+                      isOpen ? 'rotate-180 text-amber-400' : ''
                     }`}
                   />
                 </button>
@@ -84,56 +98,53 @@ export const Footer: React.FC = () => {
           {/* Brand & Mission */}
           <div className="md:col-span-5 space-y-4">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-cyan-500 via-sky-400 to-amber-400 flex items-center justify-center shadow-lg shadow-cyan-500/30">
-                <Video className="w-5 h-5 text-neutral-950 stroke-[2.5]" />
+              <div className="p-2 sm:p-2.5 rounded-2xl bg-white shadow-xl shadow-red-950/30 border border-neutral-200 inline-block">
+                <DimossLogo variant="full" size="md" />
               </div>
-              <span className="font-extrabold text-lg tracking-tight text-neutral-100">
-                V380 Pro <span className="text-cyan-400 text-xs">SOLAR 4G DUAL</span>
-              </span>
             </div>
             <p className="text-xs text-neutral-300 max-w-sm leading-relaxed">
-              كاميرا المراقبة الذكية المزدوجة الخارجية الأولى المزودة بلوح طاقة شمسية مدمج وشريحة 4G SIM لتأمين المنازل، المزارع، والمستودعات في أي مكان بدون أسلاك.
+              العلامة الرائدة في تصميم وتصنيع أطقم الكنب والمجالس الملكية والمفروشات الفاخرة في المملكة العربية السعودية، نجمع بين فخامة الخشب الطبيعي وتقنيات أقمشة النانو الذكية.
             </p>
 
             {/* Guarantees Badges */}
             <div className="p-3 rounded-xl bg-neutral-900/80 border border-neutral-800 text-xs text-neutral-300 flex items-center gap-3 w-fit">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span>ضمان سنتين ذهبي مع استبدال فوري ودعم فني عربي</span>
+              <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+              <span>ضمان ذهبي 10 سنوات • توصيل وتركيب فندقي مجاني لجميع مناطق المملكة</span>
             </div>
           </div>
 
           {/* Quick Links */}
           <div className="md:col-span-3 space-y-3">
-            <span className="text-xs font-bold text-neutral-200">روابط سريعة</span>
+            <span className="text-xs font-bold text-neutral-200">أقسام المعرض</span>
             <ul className="space-y-2 text-xs text-neutral-400">
               <li>
-                <a href="#hero" className="hover:text-cyan-400 transition-colors">
-                  معاينة الكاميرا 3D
+                <a href="#hero" className="hover:text-amber-400 transition-colors">
+                  معاينة الكنب في الاستوديو 3D
                 </a>
               </li>
               <li>
-                <a href="#features" className="hover:text-cyan-400 transition-colors">
-                  المميزات والتقنيات
+                <a href="#ar-room" className="hover:text-amber-400 transition-colors">
+                  معاينة الكنب في صالتك (AR الواقع المعزز)
                 </a>
               </li>
               <li>
-                <a href="#inspector" className="hover:text-cyan-400 transition-colors">
-                  تفكيك الأجزاء الهندسية
+                <a href="#customizer" className="hover:text-amber-400 transition-colors">
+                  مختبر تخصيص الألوان والأقمشة
                 </a>
               </li>
               <li>
-                <a href="#customizer" className="hover:text-cyan-400 transition-colors">
-                  استوديو التخصيص 3D
+                <a href="#inspector" className="hover:text-amber-400 transition-colors">
+                  فحص طبقات الجودة والهيكل الخشبي
                 </a>
               </li>
               <li>
-                <a href="#specs" className="hover:text-cyan-400 transition-colors">
-                  المواصفات الفنية
+                <a href="#specs" className="hover:text-amber-400 transition-colors">
+                  المواصفات الفنية والمقاسات
                 </a>
               </li>
               <li>
-                <a href="#pricing" className="hover:text-cyan-400 transition-colors">
-                  الباقات والأسعار المخفضة
+                <a href="#pricing" className="hover:text-amber-400 transition-colors">
+                  باقات التشكيلات وعروض تابي وتمارا
                 </a>
               </li>
             </ul>
@@ -142,24 +153,24 @@ export const Footer: React.FC = () => {
           {/* Newsletter / Instant WhatsApp Support */}
           <div className="md:col-span-4 space-y-4">
             <span className="text-xs font-bold text-neutral-200 block">
-              احصل على خصم إضافي وعروض التوفير
+              انضم لنادي عملاء ديموس VIP
             </span>
             <p className="text-xs text-neutral-400 leading-relaxed">
-              سجل بريدك الإلكتروني أو رقم هاتفك لتصلك أحدث عروض كاميرات المراقبة وملحقات الطاقة الشمسية.
+              سجل رقم جوالك أو بريدك الإلكتروني ليصلك كتالوج الموسم الجديد وكوبونات الخصم الحصرية.
             </p>
 
             <form onSubmit={handleNewsletterSubmit} className="space-y-2">
               <div className="flex items-center gap-2">
                 <input
                   type="text"
-                  placeholder="بريدك الإلكتروني أو رقم الواتساب"
+                  placeholder="رقم الجوال أو البريد الإلكتروني"
                   value={newsletterEmail}
                   onChange={(e) => setNewsletterEmail(e.target.value)}
-                  className="flex-1 px-4 py-2.5 rounded-xl bg-neutral-900 border border-neutral-800 text-xs text-neutral-200 placeholder-neutral-500 focus:outline-none focus:border-cyan-400 transition-colors"
+                  className="flex-1 px-4 py-2.5 rounded-xl bg-neutral-900 border border-neutral-800 text-xs text-neutral-200 placeholder-neutral-500 focus:outline-none focus:border-amber-400 transition-colors"
                 />
                 <button
                   type="submit"
-                  className="px-4 py-2.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-neutral-950 text-xs font-bold transition-colors flex items-center gap-1.5 shadow-md shadow-cyan-500/20"
+                  className="px-4 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-neutral-950 text-xs font-black transition-colors flex items-center gap-1.5 shadow-md shadow-amber-500/20"
                 >
                   <Send className="w-3.5 h-3.5" />
                   <span>اشتراك</span>
@@ -169,7 +180,7 @@ export const Footer: React.FC = () => {
               {newsletterSubmitted && (
                 <div className="text-xs text-emerald-400 flex items-center gap-1.5 pt-1">
                   <CheckCircle2 className="w-3.5 h-3.5" />
-                  <span>شكراً لك! تم تسجيلك بنجاح في قائمة العروض الحصرية.</span>
+                  <span>شكراً لك! تم انضمامك لقائمة عملاء ديموس VIP بنجاح.</span>
                 </div>
               )}
             </form>
@@ -180,12 +191,12 @@ export const Footer: React.FC = () => {
         {/* Bottom Bar: Copyright & Back to Top */}
         <div className="border-t border-neutral-900 pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-neutral-500">
           <div>
-            © {new Date().getFullYear()} كاميرا V380 Pro Solar 4G Dual Lens. جميع الحقوق محفوظة.
+            © {new Date().getFullYear()} مفروشات ديموس الفاخرة (DIMOSS Saudi Arabia). جميع الحقوق محفوظة.
           </div>
 
           <button
             onClick={scrollToTop}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-neutral-900 border border-neutral-800 text-neutral-400 hover:text-cyan-400 hover:border-cyan-500/40 transition-all text-xs font-bold"
+            className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-neutral-900 border border-neutral-800 text-neutral-400 hover:text-amber-400 hover:border-amber-500/40 transition-all text-xs font-bold"
           >
             <span>العودة للأعلى</span>
             <ArrowUp className="w-3.5 h-3.5" />

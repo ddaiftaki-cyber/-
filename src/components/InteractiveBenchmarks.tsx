@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { BENCHMARK_METRICS } from '../data/productData';
 import { soundFx } from '../utils/audio';
-import { BarChart3, TrendingUp, CheckCircle, ArrowLeft, ShieldCheck, Sun } from 'lucide-react';
+import { BarChart3, CheckCircle, ShieldCheck, Award, Crown, Droplets, Sparkles } from 'lucide-react';
 
 export const InteractiveBenchmarks: React.FC = () => {
   const [selectedMetricIndex, setSelectedMetricIndex] = useState(0);
@@ -13,15 +13,15 @@ export const InteractiveBenchmarks: React.FC = () => {
         
         {/* Section Header */}
         <div className="text-center max-w-3xl mx-auto mb-14 space-y-3">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-cyan-950/60 border border-cyan-800/60 text-xs font-bold text-cyan-400 tracking-wider">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-amber-950/60 border border-amber-500/40 text-xs font-black text-amber-400 tracking-wider">
             <BarChart3 className="w-3.5 h-3.5" />
-            <span>مقارنة الأداء الفعلي مع الكاميرات التقليدية</span>
+            <span>مقارنة الجودة والمواصفات المعيارية</span>
           </div>
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-neutral-100 tracking-tight">
-            لماذا تختار كاميرا V380 Pro المزدوجة؟
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-neutral-100 tracking-tight">
+            لماذا تختار مفروشات ديموس الفاخرة؟
           </h2>
           <p className="text-neutral-300 text-sm sm:text-base max-w-2xl mx-auto leading-relaxed">
-            مقارنة تقنية مباشرة توضح تفوق نظام العدستين والشحن الشمسي والاتصال المباشر بشريحة 4G على كاميرات المراقبة القديمة.
+            مقارنة تقنية مباشرة توضح تفوق خامات ديموس المصنوعة من خشب الزان الأوروبي والاسفنج الطبي HR 45D على الأثاث التجاري سريع الهبوط.
           </p>
         </div>
 
@@ -41,7 +41,7 @@ export const InteractiveBenchmarks: React.FC = () => {
                   }}
                   className={`w-full text-right p-4 sm:p-5 rounded-2xl border transition-all flex items-center justify-between group ${
                     isSelected
-                      ? 'bg-neutral-900 border-cyan-500/60 shadow-xl shadow-cyan-950/40 ring-1 ring-cyan-500/30'
+                      ? 'bg-neutral-900 border-amber-400 shadow-xl shadow-amber-950/40 ring-1 ring-amber-500/30'
                       : 'bg-neutral-900/40 border-neutral-800/80 hover:bg-neutral-900/80 hover:border-neutral-700'
                   }`}
                 >
@@ -51,7 +51,7 @@ export const InteractiveBenchmarks: React.FC = () => {
                   </div>
 
                   <div className="flex items-center gap-2">
-                    <span className="px-2.5 py-1 rounded-md bg-cyan-950/80 border border-cyan-800/60 text-cyan-400 text-xs font-bold font-sans">
+                    <span className="px-2.5 py-1 rounded-md bg-amber-950/80 border border-amber-500/40 text-amber-300 text-xs font-black font-sans">
                       {bench.advantageMultiplier}
                     </span>
                   </div>
@@ -61,14 +61,14 @@ export const InteractiveBenchmarks: React.FC = () => {
           </div>
 
           {/* Left Column (in RTL): Visual Comparison Graph Card */}
-          <div className="lg:col-span-7 p-6 sm:p-8 rounded-3xl bg-neutral-900/70 border border-neutral-800/90 backdrop-blur-xl shadow-2xl space-y-8">
+          <div className="lg:col-span-7 p-6 sm:p-8 rounded-3xl bg-neutral-900/70 border border-neutral-800 backdrop-blur-xl shadow-2xl space-y-8">
             
             <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-6 border-b border-neutral-800 gap-4">
               <div>
-                <span className="text-xs text-cyan-400 font-bold tracking-wider">
-                  تحليل مقارنة الأداء
+                <span className="text-xs text-amber-400 font-black tracking-wider">
+                  تحليل المتانة ومقارنة الاستدامة
                 </span>
-                <h3 className="text-2xl sm:text-3xl font-extrabold text-neutral-100 mt-1">
+                <h3 className="text-2xl sm:text-3xl font-black text-neutral-100 mt-1">
                   {activeMetric.metric}
                 </h3>
                 <p className="text-xs sm:text-sm text-neutral-300 mt-1">
@@ -77,11 +77,11 @@ export const InteractiveBenchmarks: React.FC = () => {
               </div>
 
               <div className="text-right sm:text-left">
-                <div className="text-2xl sm:text-3xl font-black text-cyan-400 font-sans">
+                <div className="text-2xl sm:text-3xl font-black text-amber-400 font-sans">
                   {activeMetric.advantageMultiplier}
                 </div>
                 <div className="text-[11px] text-emerald-400 font-bold">
-                  فارق أداء حقيقي
+                  فارق متانة حقيقي
                 </div>
               </div>
             </div>
@@ -89,32 +89,32 @@ export const InteractiveBenchmarks: React.FC = () => {
             {/* Visual Comparative Bars */}
             <div className="space-y-6">
               
-              {/* V380 Pro Camera Bar */}
+              {/* Dimoss Sovereign Bar */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between text-xs">
                   <span className="font-bold text-neutral-100 flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full bg-cyan-400" />
-                    كاميرا V380 Pro الشمسية المزدوجة
+                    <span className="w-2.5 h-2.5 rounded-full bg-amber-400" />
+                    مفروشات ديموس الإيطالية (DIMOSS)
                   </span>
-                  <span className="text-cyan-300 font-bold text-sm font-sans">
+                  <span className="text-amber-300 font-black text-sm font-sans">
                     {activeMetric.auraValue} {activeMetric.unit.split(' ')[0]}
                   </span>
                 </div>
 
                 <div className="w-full h-4 rounded-full bg-neutral-950 border border-neutral-800 p-0.5 overflow-hidden">
                   <div
-                    className="h-full rounded-full bg-gradient-to-r from-cyan-500 via-sky-400 to-amber-400 shadow-lg shadow-cyan-500/30 transition-all duration-700"
+                    className="h-full rounded-full bg-gradient-to-r from-amber-500 via-amber-400 to-yellow-300 shadow-lg shadow-amber-500/30 transition-all duration-700"
                     style={{ width: '96%' }}
                   />
                 </div>
               </div>
 
-              {/* Traditional Wi-Fi Camera Bar */}
+              {/* Commercial Furniture Bar */}
               <div className="space-y-2 opacity-70">
                 <div className="flex items-center justify-between text-xs">
                   <span className="text-neutral-400 flex items-center gap-2">
                     <span className="w-2.5 h-2.5 rounded-full bg-neutral-600" />
-                    كاميرات الواي فاي السلكية التقليدية
+                    الكنب التجاري العادي في السوق
                   </span>
                   <span className="text-neutral-400 font-bold text-sm font-sans">
                     {activeMetric.industryAverage} {activeMetric.unit.split(' ')[0]}
@@ -134,10 +134,10 @@ export const InteractiveBenchmarks: React.FC = () => {
             </div>
 
             {/* Bottom Key takeaway message */}
-            <div className="p-4 rounded-2xl bg-neutral-950/70 border border-neutral-800/80 flex items-center gap-3 text-xs text-neutral-300">
+            <div className="p-4 rounded-2xl bg-neutral-950/80 border border-neutral-800 flex items-center gap-3 text-xs text-neutral-300">
               <CheckCircle className="w-5 h-5 text-emerald-400 shrink-0" />
               <span>
-                توفر كاميرا V380 Pro استقلالية تامة عن شبكات الكهرباء والواي فاي، وتمنحك راحة بال تامة ومراقبة مستمرة للموقع من أي هاتف.
+                تستثمر ديموس في أجود أنواع خشب الزان الأحمر وأقمشة النانو الإيطالية لضمان بقاء مجلسك بأناقته الكاملة لسنوات طويلة دون أي تلف أو هبوط.
               </span>
             </div>
 

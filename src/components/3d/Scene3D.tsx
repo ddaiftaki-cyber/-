@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import * as THREE from 'three';
 import { ProductConfig, HotspotAnnotation } from '../../types';
-import { HOTSPOT_ANNOTATIONS } from '../../data/productData';
+import { HOTSPOT_ANNOTATIONS, WOOD_FINISH_OPTIONS, METAL_ACCENT_OPTIONS, MARBLE_FINISH_OPTIONS } from '../../data/productData';
 import { soundFx } from '../../utils/audio';
 import {
   Maximize2,
@@ -9,19 +9,11 @@ import {
   Box,
   Eye,
   Camera,
-  Sun,
-  ShieldAlert,
   Sparkles,
-  BellRing,
-  Volume2,
-  VolumeX,
-  Mic,
-  Radio,
-  Flame,
-  AlertTriangle,
-  Play,
-  Square,
-  Activity,
+  Droplets,
+  Layers,
+  CheckCircle2,
+  Grid,
 } from 'lucide-react';
 
 interface Scene3DProps {
@@ -51,27 +43,20 @@ export const Scene3D: React.FC<Scene3DProps> = ({
   const partsGroupRef = useRef<THREE.Group | null>(null);
   const lightsGroupRef = useRef<THREE.Group | null>(null);
 
-  // Motion Detection & Intelligent Voice Alert State
-  const [isMotionSimulating, setIsMotionSimulating] = useState(false);
-  const [alertSeconds, setAlertSeconds] = useState(0);
-  const [isTwoWayTalking, setIsTwoWayTalking] = useState(false);
-  const motionTimerRef = useRef<number | null>(null);
-  const isSimulatingRef = useRef(false);
-  isSimulatingRef.current = isMotionSimulating;
-
   // Mesh part references for exploded view & animation
   const partsRef = useRef<{
-    solarPanelGroup?: THREE.Group;
-    fixedLensGroup?: THREE.Group;
-    ptzDomeGroup?: THREE.Group;
-    ptzInnerSphere?: THREE.Group;
-    antennasGroup?: THREE.Group;
-    batteryGroup?: THREE.Group;
-    wallBracketGroup?: THREE.Group;
-    alarmStrobeLeft?: THREE.PointLight;
-    alarmStrobeRight?: THREE.PointLight;
-    floodlightGroup?: THREE.Group;
-    gridFloor?: THREE.GridHelper;
+    sofaBaseGroup?: THREE.Group;
+    seatCushionsGroup?: THREE.Group;
+    backrestsGroup?: THREE.Group;
+    armrestsGroup?: THREE.Group;
+    throwPillowsGroup?: THREE.Group;
+    pocketSpringsGroup?: THREE.Group;
+    hrFoamLayerGroup?: THREE.Group;
+    woodPlinthMesh?: THREE.Mesh;
+    metalTrimMesh?: THREE.Mesh;
+    coffeeTableGroup?: THREE.Group;
+    floorLampGroup?: THREE.Group;
+    waterDropletsGroup?: THREE.Group;
   }>({});
 
   // Dynamic hotspot 2D screen coordinates
@@ -82,62 +67,61 @@ export const Scene3D: React.FC<Scene3DProps> = ({
   // Orbit & Mouse Interaction state
   const isDraggingRef = useRef(false);
   const prevMousePosRef = useRef({ x: 0, y: 0 });
-  const rotationVelocityRef = useRef({ x: 0, y: 0.003 });
-  const targetRotationRef = useRef({ x: 0.15, y: -0.2 });
-  const currentRotationRef = useRef({ x: 0.15, y: -0.2 });
-  const targetDistanceRef = useRef(5.4);
-  const currentDistanceRef = useRef(5.4);
+  const rotationVelocityRef = useRef({ x: 0, y: 0.002 });
+  const targetRotationRef = useRef({ x: 0.22, y: -0.35 });
+  const currentRotationRef = useRef({ x: 0.22, y: -0.35 });
+  const targetDistanceRef = useRef(5.2);
+  const currentDistanceRef = useRef(5.2);
   const explodedProgressLerpRef = useRef(0);
   const animationFrameIdRef = useRef<number>(0);
 
-  // Lighting updater
+  // Lighting updater based on Saudi salon / majlis presets
   const updateLighting = useCallback((preset: ProductConfig['lightingPreset'], lightsGroup: THREE.Group) => {
     while (lightsGroup.children.length > 0) {
       lightsGroup.remove(lightsGroup.children[0]);
     }
 
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+    const ambientLight = new THREE.AmbientLight(0xfff8ee, 0.9);
     lightsGroup.add(ambientLight);
 
-    if (preset === 'studio') {
-      // Bright daylight sunshine for solar panel
-      const sunLight = new THREE.DirectionalLight(0xffffff, 2.5);
-      sunLight.position.set(6, 10, 6);
-      const fillLight = new THREE.DirectionalLight(0xe0f2fe, 1.2);
-      fillLight.position.set(-6, 4, -4);
-      const groundBounce = new THREE.PointLight(0x0284c7, 1.8, 20);
-      groundBounce.position.set(0, -4, 4);
-      lightsGroup.add(sunLight, fillLight, groundBounce);
-    } else if (preset === 'cyber_neon') {
-      // Red and blue security strobe lighting
-      const redLight = new THREE.PointLight(0xff0044, 4.0, 20);
-      redLight.position.set(-5, 3, 4);
-      const blueLight = new THREE.PointLight(0x0066ff, 4.0, 20);
-      blueLight.position.set(5, 3, 4);
-      const topKey = new THREE.DirectionalLight(0xffffff, 0.8);
-      topKey.position.set(0, 8, 2);
-      lightsGroup.add(redLight, blueLight, topKey);
-    } else if (preset === 'sunset_amber') {
-      const sunKey = new THREE.DirectionalLight(0xff8800, 3.2);
-      sunKey.position.set(7, 5, 4);
-      const warmFill = new THREE.DirectionalLight(0xff3300, 1.0);
-      warmFill.position.set(-6, -2, -3);
-      const skyRim = new THREE.PointLight(0x38bdf8, 2.0, 20);
-      skyRim.position.set(0, 6, -5);
-      lightsGroup.add(sunKey, warmFill, skyRim);
-    } else if (preset === 'deep_void') {
-      ambientLight.intensity = 0.25;
-      const spotWhite = new THREE.SpotLight(0xffffff, 4.5, 30, Math.PI / 5, 0.3);
-      spotWhite.position.set(4, 6, 6);
-      const irLight = new THREE.PointLight(0x9333ea, 2.5, 15);
-      irLight.position.set(-4, -2, -3);
-      lightsGroup.add(spotWhite, irLight);
-    } else if (preset === 'emerald_matrix') {
-      const pirGreen = new THREE.PointLight(0x10b981, 4.0, 20);
-      pirGreen.position.set(0, -2, 5);
-      const cyanFill = new THREE.DirectionalLight(0x06b6d4, 1.8);
-      cyanFill.position.set(-5, 4, 3);
-      lightsGroup.add(pirGreen, cyanFill);
+    if (preset === 'warm_majlis') {
+      // Warm golden luxury chandeliers
+      const mainWarm = new THREE.DirectionalLight(0xffeedd, 2.8);
+      mainWarm.position.set(5, 8, 6);
+      const warmBounce = new THREE.PointLight(0xd4af37, 2.5, 18);
+      warmBounce.position.set(0, 4, 3);
+      const rimLight = new THREE.DirectionalLight(0xffcca0, 1.2);
+      rimLight.position.set(-6, 3, -4);
+      lightsGroup.add(mainWarm, warmBounce, rimLight);
+    } else if (preset === 'daylight_salon') {
+      // Bright natural daylight from floor-to-ceiling windows
+      const sunKey = new THREE.DirectionalLight(0xffffff, 3.2);
+      sunKey.position.set(8, 10, 5);
+      const skyFill = new THREE.DirectionalLight(0xe0f2fe, 1.4);
+      skyFill.position.set(-7, 5, -3);
+      const groundBounce = new THREE.PointLight(0xfef3c7, 1.6, 20);
+      groundBounce.position.set(0, -3, 4);
+      lightsGroup.add(sunKey, skyFill, groundBounce);
+    } else if (preset === 'sunset_luxury') {
+      // Warm amber Riyadh sunset vibes
+      const sunKey = new THREE.DirectionalLight(0xff9933, 3.4);
+      sunKey.position.set(7, 4, 5);
+      const purpleRim = new THREE.PointLight(0xa855f7, 1.8, 16);
+      purpleRim.position.set(-5, 3, -4);
+      lightsGroup.add(sunKey, purpleRim);
+    } else if (preset === 'evening_mood') {
+      ambientLight.intensity = 0.45;
+      const spotKey = new THREE.SpotLight(0xffeedd, 4.2, 25, Math.PI / 4, 0.4);
+      spotKey.position.set(3, 7, 5);
+      const lampGlow = new THREE.PointLight(0xffb84d, 3.5, 12);
+      lampGlow.position.set(-2.5, 2.8, 1.5);
+      lightsGroup.add(spotKey, lampGlow);
+    } else if (preset === 'emerald_palace') {
+      const emeraldGlow = new THREE.PointLight(0x10b981, 2.0, 15);
+      emeraldGlow.position.set(-4, 3, 2);
+      const goldKey = new THREE.DirectionalLight(0xfef08a, 2.6);
+      goldKey.position.set(5, 7, 5);
+      lightsGroup.add(emeraldGlow, goldKey);
     }
   }, []);
 
@@ -152,11 +136,11 @@ export const Scene3D: React.FC<Scene3DProps> = ({
     // Scene
     const scene = new THREE.Scene();
     sceneRef.current = scene;
-    scene.fog = new THREE.FogExp2(0x0a0a0c, 0.04);
+    scene.fog = new THREE.FogExp2(0x0c0b0a, 0.035);
 
     // Camera
-    const camera = new THREE.PerspectiveCamera(42, width / height, 0.1, 100);
-    camera.position.set(0, 0.5, 5.4);
+    const camera = new THREE.PerspectiveCamera(40, width / height, 0.1, 100);
+    camera.position.set(0, 0.8, 5.2);
     cameraRef.current = camera;
 
     // WebGL Renderer
@@ -169,7 +153,7 @@ export const Scene3D: React.FC<Scene3DProps> = ({
     renderer.setSize(width, height);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.25;
+    renderer.toneMappingExposure = 1.2;
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     rendererRef.current = renderer;
@@ -184,12 +168,30 @@ export const Scene3D: React.FC<Scene3DProps> = ({
     lightsGroupRef.current = lightsGroup;
     updateLighting(config.lightingPreset, lightsGroup);
 
-    // Grid Floor
-    const gridHelper = new THREE.GridHelper(16, 24, 0x00f0ff, 0x1e293b);
-    gridHelper.position.y = -2.6;
-    (gridHelper.material as THREE.Material).transparent = true;
-    (gridHelper.material as THREE.Material).opacity = 0.25;
-    scene.add(gridHelper);
+    // Luxury Salon Floor Plinth
+    const floorGeo = new THREE.CylinderGeometry(4.2, 4.4, 0.15, 64);
+    const floorMat = new THREE.MeshStandardMaterial({
+      color: 0x181614,
+      roughness: 0.6,
+      metalness: 0.2,
+    });
+    const floorMesh = new THREE.Mesh(floorGeo, floorMat);
+    floorMesh.position.y = -1.2;
+    floorMesh.receiveShadow = true;
+    scene.add(floorMesh);
+
+    // Subtle Gold Grid Ring on Floor
+    const gridRingGeo = new THREE.RingGeometry(2.4, 3.8, 48);
+    const gridRingMat = new THREE.MeshBasicMaterial({
+      color: 0xd4af37,
+      transparent: true,
+      opacity: 0.18,
+      side: THREE.DoubleSide,
+    });
+    const gridRing = new THREE.Mesh(gridRingGeo, gridRingMat);
+    gridRing.rotation.x = Math.PI / 2;
+    gridRing.position.y = -1.12;
+    scene.add(gridRing);
 
     // Master Parts Group
     const masterPartsGroup = new THREE.Group();
@@ -197,10 +199,9 @@ export const Scene3D: React.FC<Scene3DProps> = ({
     partsGroupRef.current = masterPartsGroup;
 
     // -------------------------------------------------------------
-    // BUILD 3D CAMERA MESHES (SOLAR 4G DUAL-LENS V380 PRO)
+    // BUILD 3D SOFA & LUXURY LIVING ROOM MODEL (DIMOSS SOVEREIGN)
     // -------------------------------------------------------------
 
-    // Material generator based on config
     const bodyMat = new THREE.MeshStandardMaterial({
       color: new THREE.Color(config.material.bodyColor),
       metalness: config.material.metalness,
@@ -208,247 +209,263 @@ export const Scene3D: React.FC<Scene3DProps> = ({
       wireframe: config.isWireframe,
     });
 
-    const darkTrimMat = new THREE.MeshStandardMaterial({
-      color: new THREE.Color(0x18181b),
-      metalness: 0.8,
-      roughness: 0.25,
+    const accentCushionMat = new THREE.MeshStandardMaterial({
+      color: new THREE.Color(config.material.accentColor),
+      metalness: config.material.metalness * 0.8,
+      roughness: Math.min(0.95, config.material.roughness + 0.1),
       wireframe: config.isWireframe,
     });
 
-    const lensGlassMat = new THREE.MeshPhysicalMaterial({
-      color: new THREE.Color(0x0f172a),
+    const woodObj = WOOD_FINISH_OPTIONS.find((w) => w.id === config.woodFinish) || WOOD_FINISH_OPTIONS[0];
+    const woodMat = new THREE.MeshStandardMaterial({
+      color: new THREE.Color(woodObj.color),
+      roughness: 0.45,
       metalness: 0.1,
-      roughness: 0.05,
-      transmission: 0.6,
-      ior: 1.6,
-      reflectivity: 0.9,
-      clearcoat: 1.0,
-      clearcoatRoughness: 0.1,
       wireframe: config.isWireframe,
     });
 
-    const glowLedMat = new THREE.MeshStandardMaterial({
-      color: new THREE.Color(config.coreGlowColor),
-      emissive: new THREE.Color(config.coreGlowColor),
-      emissiveIntensity: 2.5,
-      wireframe: config.isWireframe,
-    });
-
-    const solarCellMat = new THREE.MeshStandardMaterial({
-      color: new THREE.Color(0x0c1e3d),
+    const metalObj = METAL_ACCENT_OPTIONS.find((m) => m.id === config.metalAccent) || METAL_ACCENT_OPTIONS[0];
+    const metalMat = new THREE.MeshStandardMaterial({
+      color: new THREE.Color(metalObj.color),
+      roughness: 0.22,
       metalness: 0.9,
+      wireframe: config.isWireframe,
+    });
+
+    const marbleObj = MARBLE_FINISH_OPTIONS.find((m) => m.id === config.marbleFinish) || MARBLE_FINISH_OPTIONS[0];
+    const marbleMat = new THREE.MeshStandardMaterial({
+      color: new THREE.Color(marbleObj.color),
+      roughness: 0.12,
+      metalness: 0.15,
+      wireframe: config.isWireframe,
+    });
+
+    // 1. BASE STRUCTURE GROUP (Hardwood frame + Titanium Gold plinth & legs)
+    const baseGroup = new THREE.Group();
+    baseGroup.position.set(0, -0.75, 0);
+
+    // Hardwood Solid Plinth
+    const plinthGeo = new THREE.BoxGeometry(3.6, 0.18, 1.4);
+    const plinthMesh = new THREE.Mesh(plinthGeo, woodMat);
+    baseGroup.add(plinthMesh);
+    partsRef.current.woodPlinthMesh = plinthMesh;
+
+    // Metallic Rim Trim
+    const metalTrimGeo = new THREE.BoxGeometry(3.64, 0.06, 1.44);
+    const metalTrimMesh = new THREE.Mesh(metalTrimGeo, metalMat);
+    metalTrimMesh.position.y = -0.06;
+    baseGroup.add(metalTrimMesh);
+    partsRef.current.metalTrimMesh = metalTrimMesh;
+
+    // 6x Cylindrical Gold Titanium Feet
+    const footGeo = new THREE.CylinderGeometry(0.045, 0.03, 0.22, 24);
+    const footPositions = [
+      [-1.65, -0.2, 0.55],
+      [1.65, -0.2, 0.55],
+      [-1.65, -0.2, -0.55],
+      [1.65, -0.2, -0.55],
+      [0, -0.2, 0.55],
+      [0, -0.2, -0.55],
+    ];
+
+    footPositions.forEach(([fx, fy, fz]) => {
+      const foot = new THREE.Mesh(footGeo, metalMat);
+      foot.position.set(fx, fy, fz);
+      baseGroup.add(foot);
+    });
+
+    masterPartsGroup.add(baseGroup);
+    partsRef.current.sofaBaseGroup = baseGroup;
+
+    // 2. POCKET SPRING MATRIX & SUSPENSION (Internal layer shown during exploded view)
+    const springsGroup = new THREE.Group();
+    springsGroup.position.set(0, -0.45, 0);
+
+    const springCoilMat = new THREE.MeshStandardMaterial({
+      color: 0xd4af37,
+      metalness: 0.95,
       roughness: 0.15,
-      wireframe: config.isWireframe,
+      wireframe: true,
     });
 
-    const solarFrameMat = new THREE.MeshStandardMaterial({
-      color: new THREE.Color(0x27272a),
-      metalness: 0.85,
-      roughness: 0.3,
-      wireframe: config.isWireframe,
-    });
-
-    // 1. SOLAR PANEL GROUP (Top)
-    const solarGroup = new THREE.Group();
-    solarGroup.position.set(0, 1.75, -0.3);
-    solarGroup.rotation.x = -0.42; // Tilted towards sunlight
-
-    // Solar Panel base plate
-    const solarBaseGeo = new THREE.BoxGeometry(2.8, 0.08, 1.8);
-    const solarBaseMesh = new THREE.Mesh(solarBaseGeo, solarFrameMat);
-    solarGroup.add(solarBaseMesh);
-
-    // Solar Cells Grid Surface
-    const solarGridGeo = new THREE.PlaneGeometry(2.68, 1.68);
-    const solarGridMesh = new THREE.Mesh(solarGridGeo, solarCellMat);
-    solarGridMesh.rotation.x = -Math.PI / 2;
-    solarGridMesh.position.y = 0.045;
-    solarGroup.add(solarGridMesh);
-
-    // Solar Panel Support Arm & Ball Joint
-    const solarArmGeo = new THREE.CylinderGeometry(0.06, 0.06, 0.6, 16);
-    const solarArmMesh = new THREE.Mesh(solarArmGeo, darkTrimMat);
-    solarArmMesh.position.set(0, -0.3, -0.2);
-    solarArmMesh.rotation.x = 0.5;
-    solarGroup.add(solarArmMesh);
-
-    masterPartsGroup.add(solarGroup);
-    partsRef.current.solarPanelGroup = solarGroup;
-
-    // 2. WALL BRACKET & SIM/TF CARD SLOT (Back)
-    const bracketGroup = new THREE.Group();
-    bracketGroup.position.set(0, 0.4, -0.75);
-
-    const wallPlateGeo = new THREE.CylinderGeometry(0.45, 0.45, 0.1, 24);
-    const wallPlateMesh = new THREE.Mesh(wallPlateGeo, darkTrimMat);
-    wallPlateMesh.rotation.x = Math.PI / 2;
-    bracketGroup.add(wallPlateMesh);
-
-    const bracketArmGeo = new THREE.BoxGeometry(0.38, 0.45, 0.7);
-    const bracketArmMesh = new THREE.Mesh(bracketArmGeo, bodyMat);
-    bracketArmMesh.position.set(0, 0, 0.35);
-    bracketGroup.add(bracketArmMesh);
-
-    // SIM & TF Card Cover Plate
-    const cardSlotCoverGeo = new THREE.BoxGeometry(0.06, 0.22, 0.28);
-    const cardSlotCoverMesh = new THREE.Mesh(cardSlotCoverGeo, darkTrimMat);
-    cardSlotCoverMesh.position.set(0.2, 0, 0.35);
-    bracketGroup.add(cardSlotCoverMesh);
-
-    masterPartsGroup.add(bracketGroup);
-    partsRef.current.wallBracketGroup = bracketGroup;
-
-    // 3. DUAL 4G ANTENNAS (Sides / Rear)
-    const antennasGroup = new THREE.Group();
-    antennasGroup.position.set(0, 0.7, -0.4);
-
-    const antennaGeo = new THREE.CylinderGeometry(0.04, 0.035, 1.4, 16);
-    const antennaLeft = new THREE.Mesh(antennaGeo, darkTrimMat);
-    antennaLeft.position.set(-0.65, 0.65, 0);
-    antennaLeft.rotation.z = 0.08;
-    antennasGroup.add(antennaLeft);
-
-    const antennaRight = new THREE.Mesh(antennaGeo, darkTrimMat);
-    antennaRight.position.set(0.65, 0.65, 0);
-    antennaRight.rotation.z = -0.08;
-    antennasGroup.add(antennaRight);
-
-    masterPartsGroup.add(antennasGroup);
-    partsRef.current.antennasGroup = antennasGroup;
-
-    // 4. INTEGRATED BATTERY & TOP HOUSING (Middle Dome)
-    const batteryGroup = new THREE.Group();
-    batteryGroup.position.set(0, 0.75, 0);
-
-    const topHousingGeo = new THREE.CylinderGeometry(0.55, 0.62, 0.65, 32);
-    const topHousingMesh = new THREE.Mesh(topHousingGeo, bodyMat);
-    batteryGroup.add(topHousingMesh);
-
-    // Status LED Ring
-    const ringGeo = new THREE.TorusGeometry(0.58, 0.025, 16, 48);
-    const ringMesh = new THREE.Mesh(ringGeo, glowLedMat);
-    ringMesh.rotation.x = Math.PI / 2;
-    ringMesh.position.y = -0.1;
-    batteryGroup.add(ringMesh);
-
-    masterPartsGroup.add(batteryGroup);
-    partsRef.current.batteryGroup = batteryGroup;
-
-    // 5. UPPER MODULE - FIXED LENS CAMERA
-    const fixedLensGroup = new THREE.Group();
-    fixedLensGroup.position.set(0, 0.35, 0.25);
-
-    const fixedBodyGeo = new THREE.BoxGeometry(0.95, 0.75, 0.7);
-    const fixedBodyMesh = new THREE.Mesh(fixedBodyGeo, bodyMat);
-    fixedLensGroup.add(fixedBodyMesh);
-
-    // Fixed Lens Bezel
-    const fixedLensBezelGeo = new THREE.CylinderGeometry(0.24, 0.24, 0.12, 32);
-    const fixedLensBezelMesh = new THREE.Mesh(fixedLensBezelGeo, darkTrimMat);
-    fixedLensBezelMesh.rotation.x = Math.PI / 2;
-    fixedLensBezelMesh.position.set(0, 0.05, 0.36);
-    fixedLensGroup.add(fixedLensBezelMesh);
-
-    // Fixed Lens Glass
-    const fixedLensGlassGeo = new THREE.SphereGeometry(0.18, 24, 24, 0, Math.PI * 2, 0, Math.PI / 2);
-    const fixedLensGlassMesh = new THREE.Mesh(fixedLensGlassGeo, lensGlassMat);
-    fixedLensGlassMesh.rotation.x = Math.PI / 2;
-    fixedLensGlassMesh.position.set(0, 0.05, 0.4);
-    fixedLensGroup.add(fixedLensGlassMesh);
-
-    // Fixed Module 6x White Floodlight LEDs surrounding the lens
-    for (let i = 0; i < 6; i++) {
-      const angle = (i / 6) * Math.PI * 2;
-      const ledGeo = new THREE.CylinderGeometry(0.045, 0.045, 0.04, 16);
-      const ledMesh = new THREE.Mesh(ledGeo, glowLedMat);
-      ledMesh.rotation.x = Math.PI / 2;
-      ledMesh.position.set(Math.cos(angle) * 0.32, 0.05 + Math.sin(angle) * 0.24, 0.36);
-      fixedLensGroup.add(ledMesh);
+    for (let row = -1; row <= 1; row++) {
+      for (let col = -4; col <= 4; col++) {
+        const springGeo = new THREE.CylinderGeometry(0.1, 0.1, 0.25, 12);
+        const springMesh = new THREE.Mesh(springGeo, springCoilMat);
+        springMesh.position.set(col * 0.38, 0, row * 0.38);
+        springsGroup.add(springMesh);
+      }
     }
+    masterPartsGroup.add(springsGroup);
+    partsRef.current.pocketSpringsGroup = springsGroup;
 
-    masterPartsGroup.add(fixedLensGroup);
-    partsRef.current.fixedLensGroup = fixedLensGroup;
-
-    // 6. LOWER MODULE - 360° PTZ ROTATING DOME CAMERA
-    const ptzDomeGroup = new THREE.Group();
-    ptzDomeGroup.position.set(0, -0.65, 0.1);
-
-    // PTZ Motorized Swivel Fork
-    const forkBaseGeo = new THREE.CylinderGeometry(0.55, 0.55, 0.15, 32);
-    const forkBaseMesh = new THREE.Mesh(forkBaseGeo, darkTrimMat);
-    forkBaseMesh.position.y = 0.35;
-    ptzDomeGroup.add(forkBaseMesh);
-
-    // PTZ Rotating Inner Sphere
-    const ptzInnerSphere = new THREE.Group();
-    ptzDomeGroup.add(ptzInnerSphere);
-    partsRef.current.ptzInnerSphere = ptzInnerSphere;
-
-    const sphereDomeGeo = new THREE.SphereGeometry(0.56, 32, 32);
-    const sphereDomeMesh = new THREE.Mesh(sphereDomeGeo, bodyMat);
-    ptzInnerSphere.add(sphereDomeMesh);
-
-    // Center Main PTZ Zoom Lens
-    const ptzBezelGeo = new THREE.CylinderGeometry(0.28, 0.28, 0.15, 32);
-    const ptzBezelMesh = new THREE.Mesh(ptzBezelGeo, darkTrimMat);
-    ptzBezelMesh.rotation.x = Math.PI / 2;
-    ptzBezelMesh.position.set(0, 0, 0.48);
-    ptzInnerSphere.add(ptzBezelMesh);
-
-    const ptzGlassGeo = new THREE.SphereGeometry(0.22, 24, 24, 0, Math.PI * 2, 0, Math.PI / 2);
-    const ptzGlassMesh = new THREE.Mesh(ptzGlassGeo, lensGlassMat);
-    ptzGlassMesh.rotation.x = Math.PI / 2;
-    ptzGlassMesh.position.set(0, 0, 0.54);
-    ptzInnerSphere.add(ptzGlassMesh);
-
-    // 4x White Floodlights + 4x Infrared LED Array
-    for (let j = 0; j < 8; j++) {
-      const angle = (j / 8) * Math.PI * 2;
-      const r = 0.38;
-      const ledGeo = new THREE.CylinderGeometry(0.04, 0.04, 0.03, 16);
-      const isWhite = j % 2 === 0;
-      const ledMat = isWhite ? glowLedMat : new THREE.MeshStandardMaterial({
-        color: 0x9333ea,
-        emissive: 0x9333ea,
-        emissiveIntensity: 2.0,
-      });
-      const ledMesh = new THREE.Mesh(ledGeo, ledMat);
-      ledMesh.rotation.x = Math.PI / 2;
-      ledMesh.position.set(Math.cos(angle) * r, Math.sin(angle) * r, 0.44);
-      ptzInnerSphere.add(ledMesh);
-    }
-
-    // Bottom PIR Motion Sensor (White dome bubble)
-    const pirGeo = new THREE.SphereGeometry(0.12, 20, 20);
-    const pirMat = new THREE.MeshStandardMaterial({
-      color: 0xffffff,
-      roughness: 0.1,
+    // 3. HR 45D MEMORY FOAM LAYER (Visible in exploded view)
+    const hrFoamGroup = new THREE.Group();
+    hrFoamGroup.position.set(0, -0.25, 0);
+    const hrFoamMat = new THREE.MeshStandardMaterial({
+      color: 0x38bdf8,
       metalness: 0.1,
+      roughness: 0.8,
+      transparent: true,
+      opacity: 0.85,
     });
-    const pirMesh = new THREE.Mesh(pirGeo, pirMat);
-    pirMesh.position.set(0, -0.46, 0.32);
-    ptzInnerSphere.add(pirMesh);
+    const foamBlockGeo = new THREE.BoxGeometry(3.5, 0.22, 1.3);
+    const foamBlockMesh = new THREE.Mesh(foamBlockGeo, hrFoamMat);
+    hrFoamGroup.add(foamBlockMesh);
+    masterPartsGroup.add(hrFoamGroup);
+    partsRef.current.hrFoamLayerGroup = hrFoamGroup;
 
-    // Speaker Grille slots at bottom
-    const speakerRingGeo = new THREE.TorusGeometry(0.22, 0.02, 12, 32);
-    const speakerMesh = new THREE.Mesh(speakerRingGeo, darkTrimMat);
-    speakerMesh.rotation.x = Math.PI / 2;
-    speakerMesh.position.y = -0.52;
-    ptzInnerSphere.add(speakerMesh);
+    // 4. SEATING CUSHIONS (3 Modular Deep Cushions with beveled softness)
+    const cushionsGroup = new THREE.Group();
+    cushionsGroup.position.set(0, -0.3, 0.08);
 
-    // Alarm Emergency Strobe Lights (Red & Blue)
-    const alarmLeft = new THREE.PointLight(0xff0033, 0, 8);
-    alarmLeft.position.set(-0.5, 0.2, 0.4);
-    ptzDomeGroup.add(alarmLeft);
-    partsRef.current.alarmStrobeLeft = alarmLeft;
+    const cushionGeo = new THREE.BoxGeometry(1.12, 0.38, 1.15);
+    const cushionOffsets = [-1.18, 0, 1.18];
 
-    const alarmRight = new THREE.PointLight(0x0066ff, 0, 8);
-    alarmRight.position.set(0.5, 0.2, 0.4);
-    ptzDomeGroup.add(alarmRight);
-    partsRef.current.alarmStrobeRight = alarmRight;
+    cushionOffsets.forEach((cx) => {
+      const seat = new THREE.Mesh(cushionGeo, bodyMat);
+      seat.position.set(cx, 0, 0);
 
-    masterPartsGroup.add(ptzDomeGroup);
-    partsRef.current.ptzDomeGroup = ptzDomeGroup;
+      // Top soft stitching piping
+      const seamGeo = new THREE.TorusGeometry(0.54, 0.015, 12, 32);
+      const seamMesh = new THREE.Mesh(seamGeo, accentCushionMat);
+      seamMesh.rotation.x = Math.PI / 2;
+      seamMesh.position.set(cx, 0.19, 0);
+      cushionsGroup.add(seamMesh);
+
+      cushionsGroup.add(seat);
+    });
+
+    masterPartsGroup.add(cushionsGroup);
+    partsRef.current.seatCushionsGroup = cushionsGroup;
+
+    // 5. BACKREST & PLUSH BACK CUSHIONS
+    const backrestsGroup = new THREE.Group();
+    backrestsGroup.position.set(0, 0.25, -0.45);
+
+    // Main structural back frame
+    const backFrameGeo = new THREE.BoxGeometry(3.5, 0.72, 0.35);
+    const backFrameMesh = new THREE.Mesh(backFrameGeo, bodyMat);
+    backrestsGroup.add(backFrameMesh);
+
+    // 3x Ergonomic Slanted Back Cushions
+    const backCushionGeo = new THREE.BoxGeometry(1.1, 0.62, 0.28);
+    cushionOffsets.forEach((bx) => {
+      const backCush = new THREE.Mesh(backCushionGeo, bodyMat);
+      backCush.position.set(bx, 0.05, 0.2);
+      backCush.rotation.x = -0.18; // Comfortable ergonomic tilt
+      backrestsGroup.add(backCush);
+    });
+
+    masterPartsGroup.add(backrestsGroup);
+    partsRef.current.backrestsGroup = backrestsGroup;
+
+    // 6. ERGONOMIC ARMRESTS (Left & Right)
+    const armrestsGroup = new THREE.Group();
+    armrestsGroup.position.set(0, 0.05, 0);
+
+    const armGeo = new THREE.BoxGeometry(0.32, 0.58, 1.35);
+
+    const leftArm = new THREE.Mesh(armGeo, bodyMat);
+    leftArm.position.set(-1.86, 0, 0);
+    armrestsGroup.add(leftArm);
+
+    const rightArm = new THREE.Mesh(armGeo, bodyMat);
+    rightArm.position.set(1.86, 0, 0);
+    armrestsGroup.add(rightArm);
+
+    masterPartsGroup.add(armrestsGroup);
+    partsRef.current.armrestsGroup = armrestsGroup;
+
+    // 7. THROW PILLOWS & ACCENT CUSHIONS
+    const pillowsGroup = new THREE.Group();
+    pillowsGroup.position.set(0, 0.05, 0.2);
+
+    const pillowGeo = new THREE.BoxGeometry(0.48, 0.48, 0.18);
+
+    const p1 = new THREE.Mesh(pillowGeo, accentCushionMat);
+    p1.position.set(-1.45, 0.1, -0.15);
+    p1.rotation.set(-0.2, 0.35, -0.1);
+    pillowsGroup.add(p1);
+
+    const p2 = new THREE.Mesh(pillowGeo, accentCushionMat);
+    p2.position.set(1.45, 0.1, -0.15);
+    p2.rotation.set(-0.2, -0.35, 0.1);
+    pillowsGroup.add(p2);
+
+    const pCenter = new THREE.Mesh(pillowGeo, accentCushionMat);
+    pCenter.position.set(0.4, 0.05, -0.18);
+    pCenter.rotation.set(-0.15, -0.1, 0);
+    pillowsGroup.add(pCenter);
+
+    masterPartsGroup.add(pillowsGroup);
+    partsRef.current.throwPillowsGroup = pillowsGroup;
+
+    // 8. COFFEE TABLE (Calacatta Gold / Nero Marquina Marble + Brushed Brass Base)
+    const coffeeTableGroup = new THREE.Group();
+    coffeeTableGroup.position.set(0, -0.72, 1.35);
+
+    // Marble Top
+    const tableTopGeo = new THREE.CylinderGeometry(0.72, 0.72, 0.06, 48);
+    const tableTopMesh = new THREE.Mesh(tableTopGeo, marbleMat);
+    coffeeTableGroup.add(tableTopMesh);
+
+    // Brass Plinth & Base
+    const tableBaseGeo = new THREE.CylinderGeometry(0.45, 0.52, 0.38, 36);
+    const tableBaseMesh = new THREE.Mesh(tableBaseGeo, metalMat);
+    tableBaseMesh.position.y = -0.22;
+    coffeeTableGroup.add(tableBaseMesh);
+
+    // Decorative Fragrance Diffuser / Arabic Coffee Cup on table
+    const cupGeo = new THREE.CylinderGeometry(0.06, 0.045, 0.09, 24);
+    const cupMat = new THREE.MeshStandardMaterial({ color: 0xd4af37, metalness: 0.9, roughness: 0.2 });
+    const cupMesh = new THREE.Mesh(cupGeo, cupMat);
+    cupMesh.position.set(0.18, 0.075, 0.1);
+    coffeeTableGroup.add(cupMesh);
+
+    masterPartsGroup.add(coffeeTableGroup);
+    partsRef.current.coffeeTableGroup = coffeeTableGroup;
+
+    // 9. FLOOR LAMP WITH COZY GLOW
+    const lampGroup = new THREE.Group();
+    lampGroup.position.set(-2.4, -0.15, -0.6);
+
+    const lampPoleGeo = new THREE.CylinderGeometry(0.025, 0.025, 2.2, 16);
+    const lampPole = new THREE.Mesh(lampPoleGeo, metalMat);
+    lampGroup.add(lampPole);
+
+    const lampShadeGeo = new THREE.ConeGeometry(0.35, 0.45, 24, 1, true);
+    const lampShadeMat = new THREE.MeshStandardMaterial({ color: 0xfff8ee, roughness: 0.3, side: THREE.DoubleSide });
+    const lampShade = new THREE.Mesh(lampShadeGeo, lampShadeMat);
+    lampShade.position.y = 1.05;
+    lampGroup.add(lampShade);
+
+    const lampGlow = new THREE.PointLight(0xffeedd, 1.8, 6);
+    lampGlow.position.y = 0.95;
+    lampGroup.add(lampGlow);
+
+    masterPartsGroup.add(lampGroup);
+    partsRef.current.floorLampGroup = lampGroup;
+
+    // 10. NANO WATER RESISTANCE SIMULATION (Liquid beads bouncing off the surface)
+    const dropletsGroup = new THREE.Group();
+    dropletsGroup.position.set(0.6, 0.1, 0.25);
+    const dropMat = new THREE.MeshPhysicalMaterial({
+      color: 0x38bdf8,
+      transmission: 0.9,
+      roughness: 0.05,
+      ior: 1.33,
+      reflectivity: 0.9,
+    });
+
+    for (let d = 0; d < 8; d++) {
+      const dropGeo = new THREE.SphereGeometry(0.035, 16, 16);
+      const dropMesh = new THREE.Mesh(dropGeo, dropMat);
+      dropMesh.position.set((Math.random() - 0.5) * 0.4, (Math.random() - 0.5) * 0.05, (Math.random() - 0.5) * 0.4);
+      dropletsGroup.add(dropMesh);
+    }
+    masterPartsGroup.add(dropletsGroup);
+    partsRef.current.waterDropletsGroup = dropletsGroup;
 
     // -------------------------------------------------------------
     // RENDER LOOP & 3D ANIMATIONS
@@ -460,20 +477,20 @@ export const Scene3D: React.FC<Scene3DProps> = ({
       const delta = clock.getDelta();
       const time = clock.getElapsedTime();
 
-      // Smooth Lerp for Orbit Controls
+      // Smooth Orbit Controls Lerp
       if (!isDraggingRef.current) {
         if (config.autoRotate) {
-          targetRotationRef.current.y += 0.008 * config.rotationSpeed;
+          targetRotationRef.current.y += 0.006 * config.rotationSpeed;
         } else {
           targetRotationRef.current.y += rotationVelocityRef.current.y;
           targetRotationRef.current.x += rotationVelocityRef.current.x;
-          rotationVelocityRef.current.y *= 0.94;
-          rotationVelocityRef.current.x *= 0.94;
+          rotationVelocityRef.current.y *= 0.92;
+          rotationVelocityRef.current.x *= 0.92;
         }
       }
 
       // Clamp vertical pitch rotation
-      targetRotationRef.current.x = Math.max(-0.6, Math.min(0.8, targetRotationRef.current.x));
+      targetRotationRef.current.x = Math.max(-0.2, Math.min(0.65, targetRotationRef.current.x));
 
       currentRotationRef.current.x += (targetRotationRef.current.x - currentRotationRef.current.x) * 0.1;
       currentRotationRef.current.y += (targetRotationRef.current.y - currentRotationRef.current.y) * 0.1;
@@ -486,86 +503,52 @@ export const Scene3D: React.FC<Scene3DProps> = ({
         const ry = currentRotationRef.current.y;
 
         cameraRef.current.position.x = dist * Math.sin(ry) * Math.cos(rx);
-        cameraRef.current.position.y = 0.2 + dist * Math.sin(rx);
+        cameraRef.current.position.y = 0.4 + dist * Math.sin(rx);
         cameraRef.current.position.z = dist * Math.cos(ry) * Math.cos(rx);
-        cameraRef.current.lookAt(0, 0.1, 0);
+        cameraRef.current.lookAt(0, -0.1, 0);
       }
 
       // Exploded View Lerping
       const targetExplode = config.isExploded ? (config.explodedProgress > 0 ? config.explodedProgress : 1) : 0;
-      explodedProgressLerpRef.current += (targetExplode - explodedProgressLerpRef.current) * 0.1;
+      explodedProgressLerpRef.current += (targetExplode - explodedProgressLerpRef.current) * 0.08;
       const ep = explodedProgressLerpRef.current;
 
       // Explode individual part positions smoothly
-      if (partsRef.current.solarPanelGroup) {
-        partsRef.current.solarPanelGroup.position.set(0, 1.75 + ep * 1.2, -0.3 - ep * 0.4);
+      if (partsRef.current.sofaBaseGroup) {
+        partsRef.current.sofaBaseGroup.position.y = -0.75 - ep * 0.9;
       }
-      if (partsRef.current.fixedLensGroup) {
-        partsRef.current.fixedLensGroup.position.set(0, 0.35 + ep * 0.6, 0.25 + ep * 1.4);
+      if (partsRef.current.pocketSpringsGroup) {
+        partsRef.current.pocketSpringsGroup.position.y = -0.45 - ep * 0.4;
+        partsRef.current.pocketSpringsGroup.visible = ep > 0.05;
       }
-      if (partsRef.current.ptzDomeGroup) {
-        partsRef.current.ptzDomeGroup.position.set(0, -0.65 - ep * 1.2, 0.1 + ep * 0.6);
+      if (partsRef.current.hrFoamLayerGroup) {
+        partsRef.current.hrFoamLayerGroup.position.y = -0.25 + ep * 0.3;
+        partsRef.current.hrFoamLayerGroup.visible = ep > 0.05;
       }
-      if (partsRef.current.antennasGroup) {
-        partsRef.current.antennasGroup.position.set(0, 0.7 + ep * 0.4, -0.4 - ep * 0.6);
+      if (partsRef.current.seatCushionsGroup) {
+        partsRef.current.seatCushionsGroup.position.set(0, -0.3 + ep * 0.9, 0.08 + ep * 0.4);
       }
-      if (partsRef.current.batteryGroup) {
-        partsRef.current.batteryGroup.position.set(0, 0.75 + ep * 0.9, -ep * 0.2);
+      if (partsRef.current.backrestsGroup) {
+        partsRef.current.backrestsGroup.position.set(0, 0.25 + ep * 0.8, -0.45 - ep * 0.7);
       }
-      if (partsRef.current.wallBracketGroup) {
-        partsRef.current.wallBracketGroup.position.set(0, 0.4, -0.75 - ep * 1.2);
+      if (partsRef.current.armrestsGroup) {
+        if (partsRef.current.armrestsGroup.children[0]) {
+          partsRef.current.armrestsGroup.children[0].position.x = -1.86 - ep * 0.8;
+        }
+        if (partsRef.current.armrestsGroup.children[1]) {
+          partsRef.current.armrestsGroup.children[1].position.x = 1.86 + ep * 0.8;
+        }
+      }
+      if (partsRef.current.throwPillowsGroup) {
+        partsRef.current.throwPillowsGroup.position.set(0, 0.05 + ep * 1.3, 0.2 + ep * 0.5);
+      }
+      if (partsRef.current.coffeeTableGroup) {
+        partsRef.current.coffeeTableGroup.position.set(0, -0.72, 1.35 + ep * 0.9);
       }
 
-      // PTZ Dome Manual Control vs Auto Cruise vs Idle Scanning
-      if (partsRef.current.ptzInnerSphere && !config.isExploded) {
-        if (isSimulatingRef.current) {
-          // Rapid motorized tracking lock-on
-          const trackAngle = Math.sin(time * 3.2) * 0.7;
-          const trackTilt = Math.cos(time * 2.8) * 0.35 + 0.1;
-          partsRef.current.ptzInnerSphere.rotation.y = trackAngle;
-          partsRef.current.ptzInnerSphere.rotation.x = trackTilt;
-        } else if (config.ptzAutoCruise) {
-          // Continuous 360 cruise scan
-          partsRef.current.ptzInnerSphere.rotation.y = (time * 0.7) % (Math.PI * 2);
-          partsRef.current.ptzInnerSphere.rotation.x = Math.sin(time * 0.4) * 0.25;
-        } else if (typeof config.ptzPanAngle === 'number' && typeof config.ptzTiltAngle === 'number') {
-          // Manual joystick / controller input with smooth damping
-          const targetPan = (config.ptzPanAngle * Math.PI) / 180;
-          const targetTilt = (config.ptzTiltAngle * Math.PI) / 180;
-          partsRef.current.ptzInnerSphere.rotation.y = THREE.MathUtils.lerp(
-            partsRef.current.ptzInnerSphere.rotation.y,
-            targetPan,
-            0.12
-          );
-          partsRef.current.ptzInnerSphere.rotation.x = THREE.MathUtils.lerp(
-            partsRef.current.ptzInnerSphere.rotation.x,
-            targetTilt,
-            0.12
-          );
-        } else {
-          const scanAngle = Math.sin(time * 0.8) * 0.4;
-          const tiltAngle = Math.cos(time * 0.5) * 0.15;
-          partsRef.current.ptzInnerSphere.rotation.y = scanAngle;
-          partsRef.current.ptzInnerSphere.rotation.x = tiltAngle;
-        }
-      }
-
-      // Flashing Alarm Strobe (Police Red & Blue) or Floodlight illumination
-      if (config.lightingPreset === 'cyber_neon' || config.alarmActive || isSimulatingRef.current) {
-        const strobeFreq = isSimulatingRef.current ? 22 : 12;
-        const strobe = Math.sin(time * strobeFreq);
-        if (partsRef.current.alarmStrobeLeft) {
-          partsRef.current.alarmStrobeLeft.intensity = strobe > 0 ? 7.0 : 0;
-        }
-        if (partsRef.current.alarmStrobeRight) {
-          partsRef.current.alarmStrobeRight.intensity = strobe < 0 ? 7.0 : 0;
-        }
-      } else if (config.floodlightActive) {
-        if (partsRef.current.alarmStrobeLeft) partsRef.current.alarmStrobeLeft.intensity = 5.0;
-        if (partsRef.current.alarmStrobeRight) partsRef.current.alarmStrobeRight.intensity = 5.0;
-      } else {
-        if (partsRef.current.alarmStrobeLeft) partsRef.current.alarmStrobeLeft.intensity = 0;
-        if (partsRef.current.alarmStrobeRight) partsRef.current.alarmStrobeRight.intensity = 0;
+      // Water droplet floating effect
+      if (partsRef.current.waterDropletsGroup) {
+        partsRef.current.waterDropletsGroup.position.y = 0.1 + Math.sin(time * 3) * 0.03;
       }
 
       // Hotspots Projection calculation
@@ -612,90 +595,12 @@ export const Scene3D: React.FC<Scene3DProps> = ({
     return () => {
       window.removeEventListener('resize', handleResize);
       cancelAnimationFrame(animationFrameIdRef.current);
-      soundFx.stopAlarmSiren();
-      if (motionTimerRef.current) {
-        clearInterval(motionTimerRef.current);
-      }
       if (mount && renderer.domElement) {
         mount.removeChild(renderer.domElement);
       }
       renderer.dispose();
     };
-  }, [interactive, updateLighting]);
-
-  // Dynamically adapt renderer & exposure for Eco Mode
-  useEffect(() => {
-    if (!rendererRef.current) return;
-    if (config.ecoMode) {
-      rendererRef.current.setPixelRatio(1.0);
-      rendererRef.current.toneMappingExposure = 0.95;
-    } else {
-      rendererRef.current.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-      rendererRef.current.toneMappingExposure = 1.25;
-    }
-  }, [config.ecoMode]);
-
-  // Handle Motion Detection Simulation Trigger
-  const handleTriggerMotionSimulation = () => {
-    soundFx.playClick();
-    if (isMotionSimulating) {
-      handleStopAlarm();
-      return;
-    }
-
-    setIsMotionSimulating(true);
-    setAlertSeconds(14);
-    if (onConfigChange) {
-      onConfigChange({ alarmActive: true, lightingPreset: 'cyber_neon' });
-    }
-
-    // Play procedural alarm siren sound loop
-    soundFx.startAlarmSiren();
-
-    // Trigger voice alert
-    setTimeout(() => {
-      soundFx.playVoiceAlert(
-        'تنبيه أمني فوري! تم رصد حركة غير معتادة، تم تشغيل صفارة الإنذار والفلاش الضوئي وجاري التسجيل والمتابعة'
-      );
-    }, 350);
-
-    // Auto-countdown timer
-    if (motionTimerRef.current) clearInterval(motionTimerRef.current);
-    motionTimerRef.current = window.setInterval(() => {
-      setAlertSeconds((prev) => {
-        if (prev <= 1) {
-          handleStopAlarm();
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-  };
-
-  // Stop Alarm & Siren
-  const handleStopAlarm = () => {
-    soundFx.playClick();
-    soundFx.stopAlarmSiren();
-    setIsMotionSimulating(false);
-    setIsTwoWayTalking(false);
-    if (motionTimerRef.current) {
-      clearInterval(motionTimerRef.current);
-      motionTimerRef.current = null;
-    }
-    if (onConfigChange) {
-      onConfigChange({ alarmActive: false, lightingPreset: 'studio' });
-    }
-  };
-
-  // Simulate Two-Way Audio Talk
-  const handleSimulateTwoWayTalk = () => {
-    soundFx.playWalkieTalkieChirp();
-    setIsTwoWayTalking(true);
-    soundFx.playVoiceAlert('مرحباً! أنت في منطقة مراقبة أمنية مباشرة، يرجى مغادرة المكان فوراً.');
-    setTimeout(() => {
-      setIsTwoWayTalking(false);
-    }, 4500);
-  };
+  }, [interactive, updateLighting, config.woodFinish, config.metalAccent, config.marbleFinish]);
 
   // Update Dynamic Lighting when preset changes
   useEffect(() => {
@@ -704,20 +609,66 @@ export const Scene3D: React.FC<Scene3DProps> = ({
     }
   }, [config.lightingPreset, updateLighting]);
 
-  // Update Materials when Config changes (Color finish, wireframe, glow)
+  // Update Materials when Config changes (Color finish, wireframe)
   useEffect(() => {
     if (!partsGroupRef.current) return;
 
-    partsGroupRef.current.traverse((child) => {
-      if (child instanceof THREE.Mesh) {
-        if (child.material instanceof THREE.MeshStandardMaterial) {
-          if (child.material.wireframe !== config.isWireframe) {
-            child.material.wireframe = config.isWireframe;
-          }
+    const newBodyColor = new THREE.Color(config.material.bodyColor);
+    const newAccentColor = new THREE.Color(config.material.accentColor);
+
+    if (partsRef.current.seatCushionsGroup) {
+      partsRef.current.seatCushionsGroup.traverse((child) => {
+        if (child instanceof THREE.Mesh && child.material instanceof THREE.MeshStandardMaterial) {
+          child.material.color = newBodyColor;
+          child.material.metalness = config.material.metalness;
+          child.material.roughness = config.material.roughness;
+          child.material.wireframe = config.isWireframe;
         }
-      }
-    });
-  }, [config.material, config.coreGlowColor, config.isWireframe]);
+      });
+    }
+
+    if (partsRef.current.backrestsGroup) {
+      partsRef.current.backrestsGroup.traverse((child) => {
+        if (child instanceof THREE.Mesh && child.material instanceof THREE.MeshStandardMaterial) {
+          child.material.color = newBodyColor;
+          child.material.metalness = config.material.metalness;
+          child.material.roughness = config.material.roughness;
+          child.material.wireframe = config.isWireframe;
+        }
+      });
+    }
+
+    if (partsRef.current.armrestsGroup) {
+      partsRef.current.armrestsGroup.traverse((child) => {
+        if (child instanceof THREE.Mesh && child.material instanceof THREE.MeshStandardMaterial) {
+          child.material.color = newBodyColor;
+          child.material.metalness = config.material.metalness;
+          child.material.roughness = config.material.roughness;
+          child.material.wireframe = config.isWireframe;
+        }
+      });
+    }
+
+    if (partsRef.current.throwPillowsGroup) {
+      partsRef.current.throwPillowsGroup.traverse((child) => {
+        if (child instanceof THREE.Mesh && child.material instanceof THREE.MeshStandardMaterial) {
+          child.material.color = newAccentColor;
+          child.material.wireframe = config.isWireframe;
+        }
+      });
+    }
+
+    // Wood & Metal finish updates
+    const woodObj = WOOD_FINISH_OPTIONS.find((w) => w.id === config.woodFinish);
+    if (woodObj && partsRef.current.woodPlinthMesh) {
+      (partsRef.current.woodPlinthMesh.material as THREE.MeshStandardMaterial).color = new THREE.Color(woodObj.color);
+    }
+
+    const metalObj = METAL_ACCENT_OPTIONS.find((m) => m.id === config.metalAccent);
+    if (metalObj && partsRef.current.metalTrimMesh) {
+      (partsRef.current.metalTrimMesh.material as THREE.MeshStandardMaterial).color = new THREE.Color(metalObj.color);
+    }
+  }, [config.material, config.isWireframe, config.woodFinish, config.metalAccent]);
 
   // Mouse & Touch Drag Event Handlers
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -731,8 +682,8 @@ export const Scene3D: React.FC<Scene3DProps> = ({
     const deltaX = e.clientX - prevMousePosRef.current.x;
     const deltaY = e.clientY - prevMousePosRef.current.y;
 
-    targetRotationRef.current.y += deltaX * 0.008;
-    targetRotationRef.current.x += deltaY * 0.008;
+    targetRotationRef.current.y += deltaX * 0.007;
+    targetRotationRef.current.x += deltaY * 0.007;
 
     rotationVelocityRef.current = {
       x: deltaY * 0.001,
@@ -748,7 +699,7 @@ export const Scene3D: React.FC<Scene3DProps> = ({
 
   const handleWheel = (e: React.WheelEvent) => {
     if (!interactive) return;
-    targetDistanceRef.current = Math.max(3.2, Math.min(8.5, targetDistanceRef.current + e.deltaY * 0.003));
+    targetDistanceRef.current = Math.max(3.0, Math.min(8.0, targetDistanceRef.current + e.deltaY * 0.003));
   };
 
   // Touch handlers
@@ -763,24 +714,24 @@ export const Scene3D: React.FC<Scene3DProps> = ({
     const deltaX = e.touches[0].clientX - prevMousePosRef.current.x;
     const deltaY = e.touches[0].clientY - prevMousePosRef.current.y;
 
-    targetRotationRef.current.y += deltaX * 0.008;
-    targetRotationRef.current.x += deltaY * 0.008;
+    targetRotationRef.current.y += deltaX * 0.007;
+    targetRotationRef.current.x += deltaY * 0.007;
 
     prevMousePosRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
   };
 
   const resetCamera = () => {
     soundFx.playClick();
-    targetRotationRef.current = { x: 0.15, y: -0.2 };
-    targetDistanceRef.current = 5.4;
+    targetRotationRef.current = { x: 0.22, y: -0.35 };
+    targetDistanceRef.current = 5.2;
   };
 
   const captureSnapshot = () => {
-    soundFx.playSuccess();
+    soundFx.playCameraShutter();
     if (rendererRef.current) {
       const dataUrl = rendererRef.current.domElement.toDataURL('image/png');
       const link = document.createElement('a');
-      link.download = `V380-Pro-Solar-4G-Camera.png`;
+      link.download = `Dimoss-Saudi-Luxury-Living.png`;
       link.href = dataUrl;
       link.click();
     }
@@ -830,8 +781,8 @@ export const Scene3D: React.FC<Scene3DProps> = ({
                 }}
                 className={`group relative flex items-center justify-center rounded-full transition-all duration-300 ${
                   isSelected
-                    ? 'w-7 h-7 bg-cyan-400 text-neutral-950 ring-4 ring-cyan-500/40 shadow-xl shadow-cyan-500/50 scale-125'
-                    : 'w-6 h-6 bg-neutral-900/90 text-cyan-400 border border-cyan-500/40 hover:scale-110 hover:border-cyan-300 hover:bg-neutral-800'
+                    ? 'w-8 h-8 bg-amber-400 text-neutral-950 ring-4 ring-amber-500/40 shadow-xl shadow-amber-500/50 scale-125'
+                    : 'w-6 h-6 bg-neutral-950/90 text-amber-400 border border-amber-500/50 hover:scale-110 hover:border-amber-300 hover:bg-neutral-900'
                 }`}
                 title={spot.annotation.title}
               >
@@ -839,11 +790,11 @@ export const Scene3D: React.FC<Scene3DProps> = ({
 
                 {/* Technical Tooltip on Hover / Select */}
                 <div
-                  className={`absolute bottom-full mb-2 left-1/2 -translate-x-1/2 w-48 sm:w-56 p-2.5 rounded-xl bg-neutral-950/95 border border-cyan-500/30 text-right text-xs shadow-2xl backdrop-blur-md transition-all duration-200 pointer-events-none ${
+                  className={`absolute bottom-full mb-2.5 left-1/2 -translate-x-1/2 w-56 sm:w-64 p-3 rounded-2xl bg-neutral-950/95 border border-amber-500/40 text-right text-xs shadow-2xl backdrop-blur-md transition-all duration-200 pointer-events-none ${
                     isSelected ? 'opacity-100 scale-100 z-30' : 'opacity-0 scale-95 group-hover:opacity-100 group-hover:scale-100'
                   }`}
                 >
-                  <div className="font-bold text-neutral-100 mb-0.5 text-xs text-cyan-400">{spot.annotation.title}</div>
+                  <div className="font-extrabold text-amber-400 mb-1 text-xs">{spot.annotation.title}</div>
                   <div className="text-[11px] text-neutral-300 line-clamp-2 leading-relaxed">{spot.annotation.subtitle}</div>
                 </div>
               </button>
@@ -856,31 +807,16 @@ export const Scene3D: React.FC<Scene3DProps> = ({
         <div className="absolute top-4 left-4 right-4 flex items-center justify-between pointer-events-none z-10">
           
           {/* Top Left Live Status Pill */}
-          <div className="pointer-events-auto flex items-center gap-2 px-3 py-1.5 rounded-xl bg-neutral-950/80 border border-cyan-500/20 backdrop-blur-md text-xs shadow-lg">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-            <span className="text-neutral-300 font-medium">عرض 3D تفاعلي مباشر (360°)</span>
+          <div className="pointer-events-auto flex items-center gap-2 px-3.5 py-1.5 rounded-2xl bg-neutral-950/80 border border-amber-500/30 backdrop-blur-md text-xs shadow-xl">
+            <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping" />
+            <span className="text-neutral-200 font-bold">معاينة ثلاثية الأبعاد 360°</span>
             <span className="text-neutral-600">|</span>
-            <span className="font-mono text-cyan-400 text-[11px]">V380 Pro 4G</span>
+            <span className="font-sans text-amber-400 font-extrabold text-[11px]">DIMOSS SOVEREIGN</span>
           </div>
 
           {/* Quick Action Buttons */}
-          <div className="pointer-events-auto flex items-center gap-1.5 bg-neutral-950/80 p-1 rounded-xl border border-neutral-800 backdrop-blur-md shadow-lg">
-            {/* Motion Detection & Smart Voice Alarm Button */}
-            <button
-              onClick={handleTriggerMotionSimulation}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
-                isMotionSimulating
-                  ? 'bg-rose-600 text-white shadow-lg shadow-rose-600/50 animate-pulse'
-                  : 'bg-rose-950/80 border border-rose-500/50 text-rose-300 hover:bg-rose-900/80 hover:text-rose-100'
-              }`}
-              title="محاكاة كشف الحركة والإنذار الصوتي الذكي"
-            >
-              <BellRing className={`w-3.5 h-3.5 ${isMotionSimulating ? 'animate-bounce text-white' : 'text-rose-400'}`} />
-              <span className="font-bold">
-                {isMotionSimulating ? `الإنذار مفعّل (${alertSeconds}s)` : 'محاكاة كشف الحركة'}
-              </span>
-            </button>
-
+          <div className="pointer-events-auto flex items-center gap-1.5 bg-neutral-950/80 p-1.5 rounded-2xl border border-neutral-800 backdrop-blur-md shadow-xl">
+            
             {/* AR Room View Button */}
             {onOpenAR && (
               <button
@@ -888,31 +824,31 @@ export const Scene3D: React.FC<Scene3DProps> = ({
                   soundFx.playClick();
                   onOpenAR();
                 }}
-                className="px-2.5 py-1.5 rounded-lg text-xs bg-gradient-to-r from-cyan-500 to-sky-400 hover:from-cyan-400 hover:to-sky-300 text-neutral-950 font-extrabold flex items-center gap-1.5 shadow-md shadow-cyan-500/30 transition-all hover:scale-105 active:scale-95"
-                title="العرض في غرفتك بالواقع المعزز AR"
+                className="px-3 py-1.5 rounded-xl text-xs bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-neutral-950 font-black flex items-center gap-1.5 shadow-lg shadow-amber-500/30 transition-all hover:scale-105 active:scale-95"
+                title="العرض في غرفتك ومجلسك بالواقع المعزز AR"
               >
                 <Camera className="w-3.5 h-3.5" />
-                <span className="font-bold">العرض في غرفتك (AR)</span>
+                <span className="font-bold">العرض في صالتك (AR)</span>
               </button>
             )}
 
             {/* Exploded Mode Toggle */}
             <button
               onClick={() => {
-                soundFx.playClick();
+                soundFx.playExplodeToggle(!config.isExploded);
                 if (onConfigChange) {
                   onConfigChange({ isExploded: !config.isExploded });
                 }
               }}
-              className={`p-2 rounded-lg text-xs transition-colors flex items-center gap-1.5 ${
+              className={`px-2.5 py-1.5 rounded-xl text-xs transition-all flex items-center gap-1.5 ${
                 config.isExploded
-                  ? 'bg-cyan-500 text-neutral-950 font-bold shadow-md shadow-cyan-500/30'
+                  ? 'bg-amber-400 text-neutral-950 font-black shadow-md shadow-amber-500/30'
                   : 'text-neutral-300 hover:text-neutral-100 hover:bg-neutral-800'
               }`}
-              title="تفكيك المكونات 3D"
+              title="تفكيك الطبقات الهندسية (الخشب، النوابض، الاسفنج)"
             >
-              <Box className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">تفكيك المكونات</span>
+              <Layers className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline font-bold">تفكيك الطبقات</span>
             </button>
 
             {/* Auto Rotate */}
@@ -923,8 +859,8 @@ export const Scene3D: React.FC<Scene3DProps> = ({
                   onConfigChange({ autoRotate: !config.autoRotate });
                 }
               }}
-              className={`p-2 rounded-lg text-xs transition-colors ${
-                config.autoRotate ? 'bg-cyan-500/20 text-cyan-400' : 'text-neutral-400 hover:text-neutral-100 hover:bg-neutral-800'
+              className={`p-2 rounded-xl text-xs transition-colors ${
+                config.autoRotate ? 'bg-amber-500/20 text-amber-400' : 'text-neutral-400 hover:text-neutral-100 hover:bg-neutral-800'
               }`}
               title="دوران تلقائي 360°"
             >
@@ -939,8 +875,8 @@ export const Scene3D: React.FC<Scene3DProps> = ({
                   onConfigChange({ isWireframe: !config.isWireframe });
                 }
               }}
-              className={`p-2 rounded-lg text-xs transition-colors ${
-                config.isWireframe ? 'bg-cyan-500/20 text-cyan-400' : 'text-neutral-400 hover:text-neutral-100 hover:bg-neutral-800'
+              className={`p-2 rounded-xl text-xs transition-colors ${
+                config.isWireframe ? 'bg-amber-500/20 text-amber-400' : 'text-neutral-400 hover:text-neutral-100 hover:bg-neutral-800'
               }`}
               title="مخطط هندسي CAD"
             >
@@ -950,8 +886,8 @@ export const Scene3D: React.FC<Scene3DProps> = ({
             {/* Snapshot */}
             <button
               onClick={captureSnapshot}
-              className="p-2 rounded-lg text-xs text-neutral-400 hover:text-cyan-400 hover:bg-neutral-800 transition-colors"
-              title="التقاط صورة بجودة عالية"
+              className="p-2 rounded-xl text-xs text-neutral-400 hover:text-amber-400 hover:bg-neutral-800 transition-colors"
+              title="التقاط صورة لتصميمك"
             >
               <Camera className="w-3.5 h-3.5" />
             </button>
@@ -959,7 +895,7 @@ export const Scene3D: React.FC<Scene3DProps> = ({
             {/* Reset Camera */}
             <button
               onClick={resetCamera}
-              className="p-2 rounded-lg text-xs text-neutral-400 hover:text-neutral-100 hover:bg-neutral-800 transition-colors"
+              className="p-2 rounded-xl text-xs text-neutral-400 hover:text-neutral-100 hover:bg-neutral-800 transition-colors"
               title="إعادة ضبط زاوية الرؤية"
             >
               <Maximize2 className="w-3.5 h-3.5" />
@@ -969,60 +905,10 @@ export const Scene3D: React.FC<Scene3DProps> = ({
         </div>
       )}
 
-      {/* Interactive Motion & Voice Alarm Simulation Banner */}
-      {isMotionSimulating && (
-        <div className="absolute top-16 left-4 right-4 sm:left-auto sm:right-6 sm:w-96 p-4 rounded-2xl bg-neutral-950/95 border-2 border-rose-500/80 backdrop-blur-xl shadow-2xl shadow-rose-950/80 z-30 pointer-events-auto text-right animate-in fade-in slide-in-from-top-4 duration-300">
-          <div className="flex items-start justify-between gap-3 mb-2.5">
-            <div className="flex items-center gap-2">
-              <span className="relative flex h-3 w-3">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-3 w-3 bg-rose-500"></span>
-              </span>
-              <span className="font-mono text-xs font-black text-rose-400 tracking-wider">
-                كشف حركة فوري (PIR Alert)
-              </span>
-            </div>
-
-            <div className="px-2 py-0.5 rounded-full bg-rose-950 border border-rose-600/50 text-[11px] font-mono font-bold text-rose-300">
-              {alertSeconds}s
-            </div>
-          </div>
-
-          <p className="text-xs text-neutral-200 leading-relaxed mb-3 font-medium">
-            🚨 تم كشف حركة، دوران العدسة تلقائياً للتتبع، واشتعال صفارة الإنذار 110dB وفلاش بوليسي أحمر وأزرق.
-          </p>
-
-          <div className="grid grid-cols-2 gap-2">
-            {/* Simulate Two-way Talk */}
-            <button
-              onClick={handleSimulateTwoWayTalk}
-              disabled={isTwoWayTalking}
-              className={`px-3 py-2 rounded-xl text-xs font-bold border transition-all flex items-center justify-center gap-1.5 ${
-                isTwoWayTalking
-                  ? 'bg-cyan-500 text-neutral-950 border-cyan-400 font-extrabold animate-pulse'
-                  : 'bg-neutral-900 border-cyan-500/40 text-cyan-300 hover:bg-neutral-800'
-              }`}
-            >
-              <Mic className="w-3.5 h-3.5" />
-              <span>{isTwoWayTalking ? 'جاري التحدث...' : 'تحدث الآن (مباشر)'}</span>
-            </button>
-
-            {/* Stop Siren */}
-            <button
-              onClick={handleStopAlarm}
-              className="px-3 py-2 rounded-xl text-xs font-bold bg-rose-900/80 hover:bg-rose-800 border border-rose-500/60 text-white transition-all flex items-center justify-center gap-1.5"
-            >
-              <VolumeX className="w-3.5 h-3.5" />
-              <span>إيقاف الإنذار</span>
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Bottom Hint */}
-      <div className="absolute bottom-3 left-1/2 -translate-x-1/2 pointer-events-none text-center">
-        <span className="px-3 py-1 rounded-full bg-neutral-950/70 border border-neutral-800/80 text-[11px] text-neutral-400 backdrop-blur-sm shadow-md">
-          اسحب بالماوس أو اللمس للتدوير 360° • انقر على النقاط لمعاينة المكونات
+      {/* Bottom Interactive Prompt */}
+      <div className="absolute bottom-3.5 left-1/2 -translate-x-1/2 pointer-events-none text-center">
+        <span className="px-4 py-1.5 rounded-full bg-neutral-950/80 border border-neutral-800/80 text-[11px] text-neutral-300 backdrop-blur-md shadow-lg">
+          اسحب بالماوس أو اللمس للتدوير 360° • اضغط على النقاط الذهبية لمعاينة خامات الهيكل والاسفنج
         </span>
       </div>
     </div>

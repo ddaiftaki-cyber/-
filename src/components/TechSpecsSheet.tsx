@@ -5,10 +5,10 @@ import { generateTechSpecsPDF } from '../utils/pdfGenerator';
 import {
   SlidersHorizontal,
   Check,
-  Video,
-  Sun,
-  Wifi,
-  BellRing,
+  Crown,
+  Trees,
+  Droplets,
+  Layers,
   Shield,
   ShieldCheck,
   Download,
@@ -17,7 +17,6 @@ import {
   Printer,
   Sparkles,
   ExternalLink,
-  PhoneCall,
   CheckCircle2,
   X,
 } from 'lucide-react';
@@ -36,11 +35,11 @@ export const TechSpecsSheet: React.FC = () => {
       : TECH_SPECS.filter((g) => g.category === selectedCategory);
 
   const getCategoryIcon = (name: string) => {
-    if (name.includes('العدسات') || name.includes('التصوير')) return <Video className="w-4 h-4 text-cyan-400" />;
-    if (name.includes('الشمسية') || name.includes('البطارية')) return <Sun className="w-4 h-4 text-amber-400" />;
-    if (name.includes('الاتصال') || name.includes('V380')) return <Wifi className="w-4 h-4 text-purple-400" />;
-    if (name.includes('الأمان') || name.includes('الإنذار')) return <BellRing className="w-4 h-4 text-emerald-400" />;
-    return <Shield className="w-4 h-4 text-sky-400" />;
+    if (name.includes('الهيكل') || name.includes('الخشب')) return <Trees className="w-4 h-4 text-amber-400" />;
+    if (name.includes('الاسفنج') || name.includes('الحشوات')) return <Layers className="w-4 h-4 text-yellow-400" />;
+    if (name.includes('الأقمشة') || name.includes('الجلود')) return <Droplets className="w-4 h-4 text-amber-300" />;
+    if (name.includes('المعادن') || name.includes('الرخام')) return <Sparkles className="w-4 h-4 text-yellow-300" />;
+    return <Crown className="w-4 h-4 text-amber-400" />;
   };
 
   const handleDownloadPDF = async () => {
@@ -58,30 +57,25 @@ export const TechSpecsSheet: React.FC = () => {
     }
   };
 
-  const handlePrintSpecs = () => {
-    soundFx.playClick();
-    window.print();
-  };
-
   return (
     <section id="specs" className="py-20 relative overflow-hidden bg-neutral-950 text-right">
       {/* Background glow */}
-      <div className="absolute top-1/2 left-1/4 w-[500px] h-[500px] bg-cyan-900/10 rounded-full blur-[140px] pointer-events-none" />
+      <div className="absolute top-1/2 left-1/4 w-[500px] h-[500px] bg-amber-900/10 rounded-full blur-[140px] pointer-events-none" />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         
         {/* Section Header with PDF Download CTA */}
         <div className="flex flex-col lg:flex-row lg:items-end justify-between mb-12 gap-6 border-b border-neutral-900 pb-8">
           <div className="space-y-3 max-w-2xl">
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-cyan-950/70 border border-cyan-500/40 text-xs font-black text-cyan-300 tracking-wider">
-              <SlidersHorizontal className="w-3.5 h-3.5 text-cyan-400" />
-              <span>جدول المواصفات الفنية التفصيلية • DOC-REF: V380-DZ</span>
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-amber-950/70 border border-amber-500/40 text-xs font-black text-amber-300 tracking-wider">
+              <SlidersHorizontal className="w-3.5 h-3.5 text-amber-400" />
+              <span>جدول المواصفات الفنية التفصيلية • DIMOSS KSA</span>
             </div>
             <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-neutral-100 tracking-tight">
-              المواصفات التقنية الكاملة
+              المواصفات الهندسية وكتالوج الجودة
             </h2>
             <p className="text-neutral-300 text-sm sm:text-base leading-relaxed">
-              جميع تفاصيل العدسات المزدوجة، لوح الطاقة الشمسية، شريحة 4G، وتطبيق V380 Pro المعتمد رسمياً من الشركة المصنعة.
+              جميع المقاسات الدقيقة، كثافة الاسفنج الطبي، نوعية خشب الزان الأحمر، ومعايير أقمشة النانو المقاومة للبقع المعتمدة في مفروشات ديموس.
             </p>
           </div>
 
@@ -96,41 +90,41 @@ export const TechSpecsSheet: React.FC = () => {
               }}
               className="px-4 py-3 rounded-2xl bg-neutral-900 hover:bg-neutral-800 border border-neutral-700 text-neutral-200 text-xs font-bold transition-all flex items-center justify-center gap-2 shadow-lg"
             >
-              <FileText className="w-4 h-4 text-cyan-400" />
-              <span>معاينة البطاقة التقنية</span>
+              <FileText className="w-4 h-4 text-amber-400" />
+              <span>معاينة الكتالوج الهندسي</span>
             </button>
 
             {/* Primary PDF Download Button */}
             <button
               onClick={handleDownloadPDF}
               disabled={isGeneratingPDF}
-              className={`px-5 py-3 rounded-2xl font-black text-xs transition-all flex items-center justify-center gap-2.5 shadow-xl shadow-cyan-500/20 active:scale-[0.98] ${
+              className={`px-5 py-3 rounded-2xl font-black text-xs transition-all flex items-center justify-center gap-2.5 shadow-xl shadow-amber-500/20 active:scale-[0.98] ${
                 pdfSuccess
                   ? 'bg-emerald-500 text-neutral-950 shadow-emerald-500/30'
-                  : 'bg-gradient-to-r from-cyan-500 via-sky-400 to-amber-400 hover:from-cyan-400 hover:to-amber-300 text-neutral-950 hover:scale-[1.02]'
+                  : 'bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-300 hover:from-amber-300 hover:to-yellow-200 text-neutral-950 hover:scale-[1.02]'
               }`}
             >
               {isGeneratingPDF ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin text-neutral-950" />
-                  <span>جاري توليد ملف PDF عالي الدقة...</span>
+                  <span>جاري تجهيز الكتالوج PDF...</span>
                 </>
               ) : pdfSuccess ? (
                 <>
                   <CheckCircle2 className="w-4 h-4 text-neutral-950" />
-                  <span>تم تحميل ملف PDF بنجاح! 🎉</span>
+                  <span>تم تحميل الكتالوج بنجاح! 👑</span>
                 </>
               ) : (
                 <>
                   <Download className="w-4 h-4 text-neutral-950" />
-                  <span>تحميل البطاقة التقنية (ملف PDF رسمي)</span>
+                  <span>تحميل الكتالوج والمواصفات (PDF رسمي)</span>
                 </>
               )}
             </button>
           </div>
         </div>
 
-        {/* Category Filter Pills & PDF summary indicator */}
+        {/* Category Filter Pills */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
           <div className="flex items-center gap-1.5 flex-wrap">
             {categories.map((cat) => {
@@ -144,7 +138,7 @@ export const TechSpecsSheet: React.FC = () => {
                   }}
                   className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
                     isSelected
-                      ? 'bg-cyan-500 text-neutral-950 shadow-md shadow-cyan-500/30'
+                      ? 'bg-amber-400 text-neutral-950 shadow-md shadow-amber-500/30'
                       : 'bg-neutral-900 border border-neutral-800 text-neutral-300 hover:text-neutral-100 hover:border-neutral-700'
                   }`}
                 >
@@ -155,8 +149,8 @@ export const TechSpecsSheet: React.FC = () => {
           </div>
 
           <div className="text-xs text-neutral-400 font-mono">
-            <span>شهادات الجودة: </span>
-            <strong className="text-cyan-400">CE • FCC • RoHS • IP66</strong>
+            <span>شهادات الاعتماد: </span>
+            <strong className="text-amber-400">SASO • ISO 9001 • OEKO-TEX • FSC</strong>
           </div>
         </div>
 
@@ -191,14 +185,14 @@ export const TechSpecsSheet: React.FC = () => {
                     <div className="md:col-span-8 flex items-center justify-between">
                       <span
                         className={`text-sm font-medium ${
-                          item.highlight ? 'text-cyan-300 font-bold' : 'text-neutral-200'
+                          item.highlight ? 'text-amber-300 font-bold' : 'text-neutral-200'
                         }`}
                       >
                         {item.value}
                       </span>
                       {item.highlight && (
-                        <span className="hidden sm:inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded bg-cyan-950 text-cyan-400 border border-cyan-800/60 font-sans">
-                          ميزة ممتازة
+                        <span className="hidden sm:inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded bg-amber-950 text-amber-300 border border-amber-800/60 font-sans">
+                          خامة فاخرة
                         </span>
                       )}
                     </div>
@@ -209,18 +203,18 @@ export const TechSpecsSheet: React.FC = () => {
           ))}
         </div>
 
-        {/* Bottom Banner with Quick PDF Download Reminder */}
-        <div className="mt-12 p-6 rounded-3xl bg-gradient-to-br from-neutral-900 via-neutral-900/90 to-cyan-950/40 border border-cyan-500/30 flex flex-col sm:flex-row items-center justify-between gap-6">
+        {/* Bottom Banner */}
+        <div className="mt-12 p-6 rounded-3xl bg-gradient-to-br from-neutral-900 via-neutral-900/90 to-amber-950/40 border border-amber-500/30 flex flex-col sm:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-4 text-right">
-            <div className="p-3.5 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 shrink-0">
+            <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-400 shrink-0">
               <FileText className="w-6 h-6" />
             </div>
             <div>
               <h4 className="text-base font-bold text-neutral-100">
-                هل تحتاج لنسخة مطبوعة أو إرسال المواصفات للعميل أو الفني؟
+                هل ترغب في مشاركة الكتالوج مع مهندس الديكور أو العائلة؟
               </h4>
               <p className="text-xs text-neutral-300 mt-1">
-                يمكنك تحميل كتيب المواصفات الفنية المعتمد بصيغة PDF جاهز للطباعة والمشاركة الفورية.
+                حمّل وثيقة المواصفات الفنية الرسمية الشاملة لجميع المقاسات والألوان بصيغة PDF عالية الدقة.
               </p>
             </div>
           </div>
@@ -228,14 +222,14 @@ export const TechSpecsSheet: React.FC = () => {
           <button
             onClick={handleDownloadPDF}
             disabled={isGeneratingPDF}
-            className="w-full sm:w-auto px-6 py-3 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-neutral-950 font-black text-xs transition-all flex items-center justify-center gap-2 shrink-0 shadow-lg shadow-cyan-500/20"
+            className="w-full sm:w-auto px-6 py-3 rounded-xl bg-amber-400 hover:bg-amber-300 text-neutral-950 font-black text-xs transition-all flex items-center justify-center gap-2 shrink-0 shadow-lg shadow-amber-500/20"
           >
             {isGeneratingPDF ? (
               <Loader2 className="w-4 h-4 animate-spin" />
             ) : (
               <Download className="w-4 h-4" />
             )}
-            <span>تحميل ملف PDF التقني</span>
+            <span>تحميل كتالوج ديموس PDF</span>
           </button>
         </div>
 
@@ -249,12 +243,12 @@ export const TechSpecsSheet: React.FC = () => {
             {/* Modal Header */}
             <div className="p-5 bg-neutral-950 border-b border-neutral-800 flex items-center justify-between">
               <div className="flex items-center gap-2.5">
-                <FileText className="w-5 h-5 text-cyan-400" />
+                <FileText className="w-5 h-5 text-amber-400" />
                 <div>
                   <h3 className="text-base font-bold text-neutral-100">
-                    معاينة البطاقة التقنية لكاميرا V380 Pro
+                    معاينة الكتالوج الهندسي لمفروشات ديموس
                   </h3>
-                  <span className="text-xs text-neutral-400">DOC-REF: V380-DZ-TECH-2026</span>
+                  <span className="text-xs text-neutral-400">DOC-REF: DIMOSS-KSA-2026</span>
                 </div>
               </div>
 
@@ -262,7 +256,7 @@ export const TechSpecsSheet: React.FC = () => {
                 <button
                   onClick={handleDownloadPDF}
                   disabled={isGeneratingPDF}
-                  className="px-3.5 py-1.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-neutral-950 text-xs font-bold transition-all flex items-center gap-1.5"
+                  className="px-3.5 py-1.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-neutral-950 text-xs font-bold transition-all flex items-center gap-1.5"
                 >
                   <Download className="w-3.5 h-3.5" />
                   <span>تحميل PDF</span>
@@ -277,55 +271,33 @@ export const TechSpecsSheet: React.FC = () => {
               </div>
             </div>
 
-            {/* Modal Document Body (Scrollable Sheet) */}
+            {/* Modal Document Body */}
             <div className="p-6 sm:p-8 overflow-y-auto space-y-6 bg-neutral-950 text-xs leading-relaxed font-sans">
               
-              {/* Document Letterhead */}
               <div className="p-5 rounded-2xl bg-neutral-900 border border-neutral-800 flex items-center justify-between">
                 <div>
-                  <div className="text-cyan-400 font-bold text-[11px]">📄 البطاقة التقنية الرسمية المعتمدة</div>
-                  <div className="text-lg font-black text-white mt-1">كاميرا V380 Pro المزدوجة 4G بالطاقة الشمسية</div>
-                  <div className="text-neutral-400 text-[11px]">V380 Pro 4K Dual-Lens Solar & 4G LTE Autonomous Camera</div>
+                  <div className="text-amber-400 font-bold text-[11px]">👑 الكتالوج الرسمي المعتمد</div>
+                  <div className="text-lg font-black text-white mt-1">مفروشات ديموس الفاخرة • كنب السيادة الملكي</div>
+                  <div className="text-neutral-400 text-[11px]">DIMOSS Sovereign Modular Sofa System & Royal Majlis Collection</div>
                 </div>
                 <div className="text-left font-mono">
-                  <div className="text-amber-400 font-bold text-sm">36,000 د.ج</div>
-                  <div className="text-neutral-500 text-[10px]">ضمان سنتين • 58 ولاية</div>
+                  <div className="text-amber-400 font-bold text-sm">ضمان 10 سنوات</div>
+                  <div className="text-neutral-500 text-[10px]">توصيل مجاني لكافة مناطق المملكة</div>
                 </div>
               </div>
 
-              {/* Highlights 4 Cards */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <div className="p-3 rounded-xl bg-neutral-900 border border-neutral-800 text-center">
-                  <div className="text-cyan-400 font-bold">العدسات</div>
-                  <div className="text-neutral-200 font-bold mt-0.5">4K Dual Lens 360°</div>
-                </div>
-                <div className="p-3 rounded-xl bg-neutral-900 border border-neutral-800 text-center">
-                  <div className="text-amber-400 font-bold">البطارية</div>
-                  <div className="text-neutral-200 font-bold mt-0.5">20,000mAh Solar</div>
-                </div>
-                <div className="p-3 rounded-xl bg-neutral-900 border border-neutral-800 text-center">
-                  <div className="text-emerald-400 font-bold">الشبكة</div>
-                  <div className="text-neutral-200 font-bold mt-0.5">4G LTE (58 ولاية)</div>
-                </div>
-                <div className="p-3 rounded-xl bg-neutral-900 border border-neutral-800 text-center">
-                  <div className="text-purple-400 font-bold">العزل</div>
-                  <div className="text-neutral-200 font-bold mt-0.5">IP66 Weatherproof</div>
-                </div>
-              </div>
-
-              {/* Specs Groups Preview */}
               <div className="space-y-4">
                 {TECH_SPECS.map((g, idx) => (
                   <div key={idx} className="p-4 rounded-2xl bg-neutral-900 border border-neutral-800">
-                    <div className="text-cyan-400 font-bold text-xs pb-2 border-b border-neutral-800 flex items-center justify-between">
+                    <div className="text-amber-400 font-bold text-xs pb-2 border-b border-neutral-800 flex items-center justify-between">
                       <span>{idx + 1}. {g.category}</span>
-                      <span className="text-neutral-500 font-mono text-[10px]">مواصفة معتمدة</span>
+                      <span className="text-neutral-500 font-mono text-[10px]">مواصفة قياسية</span>
                     </div>
                     <div className="divide-y divide-neutral-800/60 pt-1">
                       {g.items.map((item, i) => (
                         <div key={i} className="py-1.5 flex justify-between gap-4">
                           <span className="text-neutral-400 font-medium">{item.name}:</span>
-                          <span className={item.highlight ? 'text-cyan-300 font-bold' : 'text-neutral-200'}>
+                          <span className={item.highlight ? 'text-amber-300 font-bold' : 'text-neutral-200'}>
                             {item.value}
                           </span>
                         </div>
@@ -335,12 +307,11 @@ export const TechSpecsSheet: React.FC = () => {
                 ))}
               </div>
 
-              {/* Algerian Delivery & Warranty Footer */}
-              <div className="p-4 rounded-2xl bg-emerald-950/40 border border-emerald-500/30 flex items-center justify-between">
+              <div className="p-4 rounded-2xl bg-amber-950/40 border border-amber-500/30 flex items-center justify-between">
                 <div>
-                  <div className="text-emerald-300 font-bold">🇩🇿 التوصيل والدفع في الجزائر:</div>
+                  <div className="text-amber-300 font-bold">🇸🇦 التوصيل والتقسيط في المملكة:</div>
                   <div className="text-neutral-300 text-[11px] mt-0.5">
-                    توصيل مجاني لكافة الـ 58 ولاية • الدفع عند الاستلام بعد التجربة والمعاينة • هاتف الطلبات: 0652058044
+                    توصيل وتركيب فندقي مجاني لكافة مدن المملكة • تقسيط 4 دفعات بدون فوائد عبر تابي وتمارا • خدمة العملاء: 0501234567
                   </div>
                 </div>
               </div>
@@ -350,7 +321,7 @@ export const TechSpecsSheet: React.FC = () => {
             {/* Modal Bottom Actions */}
             <div className="p-4 bg-neutral-950 border-t border-neutral-800 flex items-center justify-between">
               <span className="text-xs text-neutral-400">
-                جاهز للتنزيل المباشر بصيغة PDF عالية الدقة
+                جاهز للتنزيل المباشر بصيغة PDF
               </span>
 
               <div className="flex items-center gap-2">
@@ -364,7 +335,7 @@ export const TechSpecsSheet: React.FC = () => {
                 <button
                   onClick={handleDownloadPDF}
                   disabled={isGeneratingPDF}
-                  className="px-5 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-neutral-950 text-xs font-black transition-all flex items-center gap-1.5"
+                  className="px-5 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-neutral-950 text-xs font-black transition-all flex items-center gap-1.5"
                 >
                   {isGeneratingPDF ? (
                     <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -383,4 +354,3 @@ export const TechSpecsSheet: React.FC = () => {
     </section>
   );
 };
-

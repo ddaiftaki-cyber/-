@@ -1,25 +1,53 @@
 import React, { useState } from 'react';
 import confetti from 'canvas-confetti';
-import { PricingPlan, ProductConfig } from '../types';
+import { PricingPlan, ProductConfig, DimosProduct } from '../types';
 import { soundFx } from '../utils/audio';
-import { X, CheckCircle2, ShieldCheck, Sparkles, Truck, Box, Download, PhoneCall, ShoppingBag, Gift, ArrowLeft } from 'lucide-react';
+import { DimossLogo } from './DimossLogo';
+import {
+  X,
+  CheckCircle2,
+  ShieldCheck,
+  Sparkles,
+  Truck,
+  Box,
+  Download,
+  PhoneCall,
+  ShoppingBag,
+  Gift,
+  ArrowLeft,
+  Crown,
+  CreditCard,
+  Building,
+} from 'lucide-react';
 
 interface ReservationModalProps {
   isOpen: boolean;
   onClose: () => void;
   plan: PricingPlan;
   config: ProductConfig;
+  customProduct?: DimosProduct | null;
 }
 
-const ALGERIAN_WILAYAS = [
-  '01 - أدرار', '02 - الشلف', '03 - الأغواط', '04 - أم البواقي', '05 - باتنة', '06 - بجاية', '07 - بسكرة', '08 - بشار',
-  '09 - البليدة', '10 - البويرة', '11 - تمنراست', '12 - تبسة', '13 - تلمسان', '14 - تيارت', '15 - تيزي وزو', '16 - الجزائر العاصمة',
-  '17 - الجلفة', '18 - جيجل', '19 - سطيف', '20 - سعيدة', '21 - سكيكدة', '22 - سيدي بلعباس', '23 - عنابة', '24 - قالمة',
-  '25 - قسنطينة', '26 - المدية', '27 - مستغانم', '28 - المسيلة', '29 - معسكر', '30 - ورقلة', '31 - وهران', '32 - البيض',
-  '33 - إليزي', '34 - برج بوعريريج', '35 - بومرداس', '36 - الطارف', '37 - تندوف', '38 - تسمسيلت', '39 - الوادي', '40 - خنشلة',
-  '41 - سوق أهراس', '42 - تيبازة', '43 - ميلة', '44 - عين الدفلى', '45 - النعامة', '46 - عين تموشنت', '47 - غرداية', '48 - غليزان',
-  '49 - تيميمون', '50 - برج باجي مختار', '51 - أولاد جلال', '52 - بني عباس', '53 - عين صالح', '54 - عين قزام', '55 - تقرت', '56 - جانت',
-  '57 - المغير', '58 - المنيعة'
+const SAUDI_CITIES = [
+  'الرياض',
+  'جدة',
+  'مكة المكرمة',
+  'المدينة المنورة',
+  'الدمام',
+  'الخبر',
+  'الظهران',
+  'الأحساء',
+  'القصيم (بريدة / عنيزة)',
+  'الطائف',
+  'أبها وخميس مشيط',
+  'تبوك',
+  'حائل',
+  'جازان',
+  'نجران',
+  'ينبع',
+  'الجبيل',
+  'حفر الباطن',
+  'الخرج',
 ];
 
 export const ReservationModal: React.FC<ReservationModalProps> = ({
@@ -27,68 +55,77 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
   onClose,
   plan,
   config,
+  customProduct = null,
 }) => {
   const [step, setStep] = useState<'form' | 'confirmed'>('form');
+  const [paymentMethod, setPaymentMethod] = useState<'tabby' | 'tamara' | 'card' | 'cod'>('tabby');
   const [formData, setFormData] = useState({
     fullName: '',
     phone: '',
-    city: '16 - الجزائر العاصمة',
-    address: '',
+    city: 'الرياض',
+    district: '',
     notes: '',
   });
   const [orderCode, setOrderCode] = useState('');
 
   if (!isOpen) return null;
 
+  const activeTitle = customProduct ? customProduct.title : plan.name;
+  const activePrice = customProduct ? customProduct.price : plan.price;
+
   const formatPlanPrice = (p: number) => {
-    if (p === 36000) return '36,000 د.ج (3 ملايين و 600 ألف)';
-    if (p === 68000) return '68,000 د.ج (6 ملايين و 800 ألف)';
-    if (p === 130000) return '130,000 د.ج (13 مليون)';
-    return `${p.toLocaleString()} د.ج`;
+    return `${p.toLocaleString()} ر.س`;
+  };
+
+  const calculateTabby = (amount: number) => {
+    return Math.round(amount / 4);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     soundFx.playSuccess();
-    const code = `V380-DZ-${Math.floor(100000 + Math.random() * 900000)}`;
+    const code = `DIMOSS-KSA-${Math.floor(100000 + Math.random() * 900000)}`;
     setOrderCode(code);
     setStep('confirmed');
 
     // Confetti celebration
     try {
       confetti({
-        particleCount: 140,
-        spread: 80,
+        particleCount: 150,
+        spread: 90,
         origin: { y: 0.6 },
-        colors: ['#00f0ff', '#f59e0b', '#10b981', '#ffffff'],
+        colors: ['#d4af37', '#fef08a', '#10b981', '#ffffff'],
       });
     } catch {}
   };
 
   const handleDownloadReceipt = () => {
     soundFx.playClick();
-    const text = `فاتورة ووصل طلب كاميرا V380 Pro الذكية بالطاقة الشمسية وشريحة 4G
+    const text = `فاتورة وعقد حجز مفروشات ديموس الفاخرة • DIMOSS KSA
 ===================================================
-رقم الطلب: ${orderCode}
-الباقة المختارة: ${plan.name}
-المبلغ المطلوب عند الاستلام: ${formatPlanPrice(plan.price)}
-المزايا والتوصيل: ${plan.gift || 'توصيل مجاني لـ 58 ولاية + ضمان سنتين'}
-لون هيكل الكاميرا: ${config.material.name}
-حالة التوصيل: توصيل مجاني لـ 58 ولاية (ما تخلص حتى تسييها وتعجبك)
+رقم الحجز: ${orderCode}
+التشكيلة المختارة: ${plan.name}
+المبلغ الإجمالي: ${formatPlanPrice(plan.price)}
+خيار السداد: ${paymentMethod === 'tabby' ? 'تقسيط تابي (4 دفعات بدون فوائد)' : paymentMethod === 'tamara' ? 'تقسيط تمارا (4 دفعات بدون فوائد)' : paymentMethod === 'card' ? 'مدى / بطاقة ائتمانية' : 'الدفع عند الاستلام والتركيب'}
+الدفعة الشهرية (في حال التقسيط): ${calculateTabby(plan.price)} ر.س / شهر
+نوع ولون القماش: ${config.material.name} (${config.fabricType})
+نوع الخشب والتشطيب: ${config.woodFinish}
+نوع المعدن: ${config.metalAccent}
+المدينة والحي: ${formData.city} - ${formData.district}
 اسم العميل: ${formData.fullName}
-رقم الهاتف: ${formData.phone}
-الولاية والبلدية: ${formData.city} - ${formData.address}
-ملاحظات العميل: ${formData.notes || 'لا توجد'}
-هاتف خدمة العملاء / الدعم: 0652058044
+رقم الجوال: ${formData.phone}
+ملاحظات الطلب: ${formData.notes || 'لا توجد'}
 ===================================================
-الضمان: ضمان ذهبي معتمد لمدة سنتين مع استبدال فوري ودعم فني.
-شكراً لاختيارك كاميرا V380 Pro لحماية منزلك ومزرعتك!`;
+الضمان: الضمان الذهبي الشامل لمدة 10 سنوات على الهيكل الخشبي ونظام النوابض والاسفنج.
+التوصيل والتركيب: مجاني 100% لفريق ديموس الفني الفندقي.
+خدمة العملاء VIP: 0501234567
+شكراً لاختيارك مفروشات ديموس لمنزلك الفاخر!`;
 
     const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `وصل-طلب-${orderCode}.txt`;
+    a.download = `حجز-ديموس-${orderCode}.txt`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -112,44 +149,109 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
           <form onSubmit={handleSubmit} className="p-6 sm:p-8 space-y-5">
             
             {/* Header */}
-            <div className="space-y-1">
-              <div className="inline-flex items-center gap-2 text-xs font-bold text-amber-400">
-                <Sparkles className="w-3.5 h-3.5" />
-                <span>إتمام الطلب السريع • الدفع عند الاستلام بعد المعاينة والتجربة</span>
+            <div className="space-y-2">
+              <div className="flex items-center gap-3">
+                <div className="p-1 rounded-lg bg-white shadow-sm border border-neutral-200 inline-block">
+                  <DimossLogo variant="full" size="sm" />
+                </div>
+                <span className="text-[11px] font-black text-red-300 bg-red-950/80 px-2.5 py-0.5 rounded-full border border-red-500/40">
+                  طلب رسمي معتمد
+                </span>
               </div>
-              <h3 className="text-2xl font-extrabold text-neutral-100">
-                طلب {plan.name}
+              <h3 className="text-2xl font-black text-neutral-100">
+                طلب وتفصيل {activeTitle}
               </h3>
               <p className="text-xs text-neutral-300">
-                التوصيل مجاني لـ 58 ولاية • ما تخلصش حتى تسيي الكاميرا وتعجبك.
+                توصيل وتركيب فندقي مجاني لكافة مدن المملكة • خيارات تقسيط ميسرة تابي وتمارا.
               </p>
             </div>
 
             {/* Selected Plan Summary Banner */}
             <div className="p-3.5 rounded-2xl bg-neutral-950/80 border border-neutral-800 flex items-center justify-between">
               <div>
-                <div className="text-xs text-neutral-400 font-medium">المبلغ المطلوب عند الاستلام:</div>
-                <div className="text-lg sm:text-xl font-black text-amber-400 font-sans">{formatPlanPrice(plan.price)}</div>
+                <div className="text-xs text-neutral-400 font-medium">السعر الإجمالي شامل الضريبة:</div>
+                <div className="text-lg sm:text-xl font-black text-amber-400 font-sans">{formatPlanPrice(activePrice)}</div>
               </div>
               <div className="text-left">
-                <span className="text-xs font-bold text-emerald-400 bg-emerald-950/80 px-2.5 py-1 rounded-lg border border-emerald-800/60 block">
-                  توصيل مجاني 58 ولاية
+                <span className="text-xs font-black text-emerald-400 bg-emerald-950/80 px-2.5 py-1 rounded-lg border border-emerald-800/60 block">
+                  أو {calculateTabby(activePrice)} ر.س / شهر
                 </span>
-                <span className="text-[11px] text-cyan-400 font-bold block pt-1">
-                  ضمان شامل سنتين
+                <span className="text-[11px] text-amber-300 font-bold block pt-1">
+                  ضمان ذهبي 10 سنوات
                 </span>
               </div>
             </div>
 
-            {/* Direct Order Quick Call */}
-            <div className="p-3 rounded-xl bg-emerald-950/40 border border-emerald-500/30 flex items-center justify-between text-xs">
-              <span className="text-emerald-300 font-bold">أو اتصل بنا مباشرة للطلب الفوري:</span>
-              <a
-                href="tel:0652058044"
-                className="px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-black"
-              >
-                0652058044
-              </a>
+            {/* Payment Method Selector */}
+            <div className="space-y-2">
+              <label className="block text-xs font-bold text-neutral-300">طريقة الدفع أو التقسيط:</label>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                
+                <button
+                  type="button"
+                  onClick={() => {
+                    soundFx.playClick();
+                    setPaymentMethod('tabby');
+                  }}
+                  className={`p-2.5 rounded-xl border text-center transition-all flex flex-col items-center justify-center ${
+                    paymentMethod === 'tabby'
+                      ? 'bg-emerald-950/80 border-emerald-400 text-emerald-300 ring-2 ring-emerald-500/30'
+                      : 'bg-neutral-950 border-neutral-800 text-neutral-400 hover:text-neutral-200'
+                  }`}
+                >
+                  <span className="font-black text-xs">تابي Tabby</span>
+                  <span className="text-[10px]">4 دفعات 0%</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    soundFx.playClick();
+                    setPaymentMethod('tamara');
+                  }}
+                  className={`p-2.5 rounded-xl border text-center transition-all flex flex-col items-center justify-center ${
+                    paymentMethod === 'tamara'
+                      ? 'bg-amber-950/80 border-amber-400 text-amber-300 ring-2 ring-amber-500/30'
+                      : 'bg-neutral-950 border-neutral-800 text-neutral-400 hover:text-neutral-200'
+                  }`}
+                >
+                  <span className="font-black text-xs">تمارا Tamara</span>
+                  <span className="text-[10px]">4 دفعات 0%</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    soundFx.playClick();
+                    setPaymentMethod('card');
+                  }}
+                  className={`p-2.5 rounded-xl border text-center transition-all flex flex-col items-center justify-center ${
+                    paymentMethod === 'card'
+                      ? 'bg-neutral-800 border-amber-400 text-neutral-100 ring-2 ring-amber-500/30'
+                      : 'bg-neutral-950 border-neutral-800 text-neutral-400 hover:text-neutral-200'
+                  }`}
+                >
+                  <span className="font-black text-xs">مدى / بطاقة</span>
+                  <span className="text-[10px]">دفع فوري</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    soundFx.playClick();
+                    setPaymentMethod('cod');
+                  }}
+                  className={`p-2.5 rounded-xl border text-center transition-all flex flex-col items-center justify-center ${
+                    paymentMethod === 'cod'
+                      ? 'bg-neutral-800 border-amber-400 text-neutral-100 ring-2 ring-amber-500/30'
+                      : 'bg-neutral-950 border-neutral-800 text-neutral-400 hover:text-neutral-200'
+                  }`}
+                >
+                  <span className="font-black text-xs">عند الاستلام</span>
+                  <span className="text-[10px]">بعد التركيب</span>
+                </button>
+
+              </div>
             </div>
 
             {/* Form Fields */}
@@ -158,48 +260,48 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
               {/* Full Name */}
               <div>
                 <label className="block text-xs font-bold text-neutral-300 mb-1">
-                  الاسم واللقب <span className="text-rose-400">*</span>
+                  الاسم الكامل <span className="text-amber-400">*</span>
                 </label>
                 <input
                   type="text"
                   required
-                  placeholder="مثال: أحمد بن علي"
+                  placeholder="مثال: فيصل بن عبدالعزيز"
                   value={formData.fullName}
                   onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                  className="w-full px-4 py-2.5 rounded-xl bg-neutral-950 border border-neutral-800 text-sm text-neutral-100 placeholder-neutral-600 focus:outline-none focus:border-cyan-400 transition-colors"
+                  className="w-full px-4 py-2.5 rounded-xl bg-neutral-950 border border-neutral-800 text-sm text-neutral-100 placeholder-neutral-600 focus:outline-none focus:border-amber-400 transition-colors"
                 />
               </div>
 
               {/* Phone Number */}
               <div>
                 <label className="block text-xs font-bold text-neutral-300 mb-1">
-                  رقم الهاتف للتوصيل <span className="text-rose-400">*</span>
+                  رقم الجوال السعودي للتوصيل والتنسيق <span className="text-amber-400">*</span>
                 </label>
                 <input
                   type="tel"
                   required
                   dir="ltr"
-                  placeholder="06XXXXXXXX / 05XXXXXXXX / 07XXXXXXXX"
+                  placeholder="05XXXXXXXX"
                   value={formData.phone}
                   onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                  className="w-full px-4 py-2.5 rounded-xl bg-neutral-950 border border-neutral-800 text-sm text-neutral-100 placeholder-neutral-600 focus:outline-none focus:border-cyan-400 transition-colors text-right"
+                  className="w-full px-4 py-2.5 rounded-xl bg-neutral-950 border border-neutral-800 text-sm text-neutral-100 placeholder-neutral-600 focus:outline-none focus:border-amber-400 transition-colors text-right"
                 />
               </div>
 
-              {/* Wilaya & Address in 2 cols */}
+              {/* City & District */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-bold text-neutral-300 mb-1">
-                    الولاية (58 ولاية) <span className="text-rose-400">*</span>
+                    المدينة <span className="text-amber-400">*</span>
                   </label>
                   <select
                     value={formData.city}
                     onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                    className="w-full px-4 py-2.5 rounded-xl bg-neutral-950 border border-neutral-800 text-sm text-neutral-100 focus:outline-none focus:border-cyan-400 transition-colors"
+                    className="w-full px-4 py-2.5 rounded-xl bg-neutral-950 border border-neutral-800 text-sm text-neutral-100 focus:outline-none focus:border-amber-400 transition-colors"
                   >
-                    {ALGERIAN_WILAYAS.map((wilaya) => (
-                      <option key={wilaya} value={wilaya} className="bg-neutral-900 text-neutral-100">
-                        {wilaya}
+                    {SAUDI_CITIES.map((c) => (
+                      <option key={c} value={c} className="bg-neutral-900 text-neutral-100">
+                        {c}
                       </option>
                     ))}
                   </select>
@@ -207,30 +309,30 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
 
                 <div>
                   <label className="block text-xs font-bold text-neutral-300 mb-1">
-                    البلدية / العنوان أو موقع المزرعة <span className="text-rose-400">*</span>
+                    الحي / الشارع أو الفيلا <span className="text-amber-400">*</span>
                   </label>
                   <input
                     type="text"
                     required
-                    placeholder="اسم البلدية والحي أو المعلم"
-                    value={formData.address}
-                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                    className="w-full px-4 py-2.5 rounded-xl bg-neutral-950 border border-neutral-800 text-sm text-neutral-100 placeholder-neutral-600 focus:outline-none focus:border-cyan-400 transition-colors"
+                    placeholder="اسم الحي والشارع"
+                    value={formData.district}
+                    onChange={(e) => setFormData({ ...formData, district: e.target.value })}
+                    className="w-full px-4 py-2.5 rounded-xl bg-neutral-950 border border-neutral-800 text-sm text-neutral-100 placeholder-neutral-600 focus:outline-none focus:border-amber-400 transition-colors"
                   />
                 </div>
               </div>
 
-              {/* Notes */}
+              {/* Custom specs notes */}
               <div>
                 <label className="block text-xs text-neutral-400 mb-1">
-                  ملاحظات إضافية للموزع (اختياري)
+                  ملاحظات أو تعديلات خاصة على المقاسات (اختياري)
                 </label>
                 <input
                   type="text"
-                  placeholder="مثال: يرجى الاتصال قبل الوصول بساعة"
+                  placeholder="مثال: يرجى جعل الزاوية جهة اليمين أو إرسال عينات الأقمشة مسبقاً"
                   value={formData.notes}
                   onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                  className="w-full px-4 py-2 rounded-xl bg-neutral-950 border border-neutral-800 text-xs text-neutral-100 placeholder-neutral-600 focus:outline-none focus:border-cyan-400 transition-colors"
+                  className="w-full px-4 py-2 rounded-xl bg-neutral-950 border border-neutral-800 text-xs text-neutral-100 placeholder-neutral-600 focus:outline-none focus:border-amber-400 transition-colors"
                 />
               </div>
 
@@ -240,21 +342,21 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
             <div className="flex items-center justify-between text-xs text-neutral-400 pt-1">
               <span className="flex items-center gap-1.5">
                 <ShieldCheck className="w-4 h-4 text-emerald-400" />
-                <span>ضمان سنتين واستبدال فوري</span>
+                <span>ضمان ديموس الذهبي 10 سنوات</span>
               </span>
               <span className="flex items-center gap-1.5">
-                <Truck className="w-4 h-4 text-cyan-400" />
-                <span>تسييها قبل ما تخلص</span>
+                <Truck className="w-4 h-4 text-amber-400" />
+                <span>توصيل وتركيب فندقي مجاني</span>
               </span>
             </div>
 
             {/* Submit Button */}
             <button
               type="submit"
-              className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-cyan-500 via-sky-400 to-amber-400 hover:from-cyan-400 hover:to-amber-300 text-neutral-950 font-extrabold text-sm shadow-xl shadow-cyan-500/25 transition-all duration-200 hover:scale-[1.01] active:scale-[0.98] flex items-center justify-center gap-2"
+              className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-300 hover:from-amber-300 hover:to-yellow-200 text-neutral-950 font-black text-sm shadow-xl shadow-amber-500/25 transition-all duration-200 hover:scale-[1.01] active:scale-[0.98] flex items-center justify-center gap-2"
             >
               <ShoppingBag className="w-4 h-4" />
-              <span>تأكيد إرسال الطلب ({formatPlanPrice(plan.price)})</span>
+              <span>تأكيد حجز التشكيلة ({formatPlanPrice(plan.price)})</span>
             </button>
 
           </form>
@@ -262,50 +364,62 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
           /* Confirmation View */
           <div className="p-8 sm:p-10 space-y-6 text-center">
             
+            <div className="flex justify-center">
+              <div className="p-2 sm:p-2.5 rounded-2xl bg-white shadow-xl shadow-red-950/20 border border-neutral-200">
+                <DimossLogo variant="full" size="sm" />
+              </div>
+            </div>
+
             <div className="w-16 h-16 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 flex items-center justify-center mx-auto shadow-xl shadow-emerald-950/50">
               <CheckCircle2 className="w-8 h-8" />
             </div>
 
             <div className="space-y-2">
-              <h3 className="text-2xl font-extrabold text-neutral-100">
-                تم استلام طلبك بنجاح! 🎉
+              <h3 className="text-2xl font-black text-neutral-100">
+                تم تأكيد حجزك في ديموس بنجاح! 👑
               </h3>
               <p className="text-sm text-neutral-300 max-w-md mx-auto leading-relaxed">
-                شكراً لثقتك بنا يا <strong className="text-cyan-400">{formData.fullName}</strong>. تم تسجيل طلبك بنجاح وسيتصل بك موزع التوصيل لتأكيد التسليم لباب منزلك.
+                شكراً لاختيارك مفروشات ديموس يا <strong className="text-amber-400">{formData.fullName}</strong>. سيتواصل معك مستشار الديكور لتأكيد المقاسات وموعد التوصيل والتركيب الفندقي.
               </p>
             </div>
 
             {/* Order Code Pill */}
             <div className="p-4 rounded-2xl bg-neutral-950 border border-neutral-800 space-y-1">
-              <span className="text-xs text-neutral-400 font-medium">رقم وصل الطلب الخاص بك:</span>
-              <div className="text-2xl font-black text-cyan-400 font-mono tracking-wider">{orderCode}</div>
-              <div className="text-xs text-neutral-500">احتفظ برقم الطلب للمتابعة مع خدمة الزبائن (0652058044)</div>
+              <span className="text-xs text-neutral-400 font-medium">رقم حجز عقد المفروشات:</span>
+              <div className="text-2xl font-black text-amber-400 font-mono tracking-wider">{orderCode}</div>
+              <div className="text-xs text-neutral-500">احتفظ برقم الحجز للمتابعة مع خدمة عملاء ديموس VIP (0501234567)</div>
             </div>
 
             {/* Summary Details */}
             <div className="p-4 rounded-2xl bg-neutral-950/60 border border-neutral-800 text-xs text-neutral-300 space-y-2 text-right">
               <div className="flex justify-between">
-                <span className="text-neutral-400">الباقة:</span>
+                <span className="text-neutral-400">التشكيلة:</span>
                 <span className="font-bold text-neutral-100">{plan.name}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-neutral-400">المبلغ المطلوب عند الاستلام:</span>
+                <span className="text-neutral-400">المبلغ الإجمالي:</span>
                 <span className="font-bold text-amber-400">{formatPlanPrice(plan.price)}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-neutral-400">الولاية والعنوان:</span>
-                <span className="font-bold text-neutral-100">{formData.city} - {formData.address}</span>
+                <span className="text-neutral-400">المدينة والحي:</span>
+                <span className="font-bold text-neutral-100">{formData.city} - {formData.district}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-neutral-400">طريقة الدفع:</span>
+                <span className="font-bold text-emerald-400">
+                  {paymentMethod === 'tabby' ? 'تقسيط تابي (4 دفعات)' : paymentMethod === 'tamara' ? 'تقسيط تمارا (4 دفعات)' : paymentMethod === 'card' ? 'مدى / بطاقة' : 'عند الاستلام والتركيب'}
+                </span>
               </div>
             </div>
 
-            {/* Actions: Download Receipt & Close */}
+            {/* Actions */}
             <div className="flex flex-col sm:flex-row items-center gap-3 pt-2">
               <button
                 onClick={handleDownloadReceipt}
                 className="w-full sm:flex-1 py-3 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-neutral-200 font-bold text-xs border border-neutral-700 transition-colors flex items-center justify-center gap-2"
               >
                 <Download className="w-4 h-4" />
-                <span>تحميل وصل الطلب</span>
+                <span>تحميل وثيقة الحجز والضمان</span>
               </button>
 
               <button
@@ -313,7 +427,7 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
                   soundFx.playClick();
                   onClose();
                 }}
-                className="w-full sm:flex-1 py-3 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-neutral-950 font-extrabold text-xs transition-colors flex items-center justify-center gap-2 shadow-lg shadow-cyan-500/20"
+                className="w-full sm:flex-1 py-3 rounded-xl bg-amber-400 hover:bg-amber-300 text-neutral-950 font-black text-xs transition-colors flex items-center justify-center gap-2 shadow-lg shadow-amber-500/20"
               >
                 <span>تم، العودة للصفحة</span>
               </button>
